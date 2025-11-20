@@ -4,6 +4,8 @@
 
 무료 포인트 시스템의 데이터베이스 구조를 설계합니다. 1원 단위 추적, 만료일 관리, 수기 지급 구분 등의 요구사항을 반영합니다.
 
+---
+
 ## 2. 엔티티 식별
 
 ### 2.1 핵심 엔티티
@@ -34,6 +36,8 @@
 #### 2.1.6 PointCancellation (포인트 취소)
 - 적립 취소 및 사용 취소 정보를 관리하는 엔티티
 - 취소 유형(적립 취소/사용 취소) 구분
+
+---
 
 ## 3. 엔티티 상세 설계
 
@@ -164,6 +168,8 @@
 - target_point_key - 대상 건별 취소 내역 조회용
 - member_id, cancellation_type - 사용자별 취소 내역 조회용
 
+---
+
 ## 4. 관계 정의
 
 ### 4.1 관계 다이어그램
@@ -202,6 +208,8 @@ Member (1) ────< (N) PointCancellation
 - **관계**: 1:N (한 사용자는 여러 취소 건을 가짐)
 - **외래키**: PointCancellation.member_id → Member.id
 
+---
+
 ## 5. 제약조건 및 비즈니스 규칙
 
 ### 5.1 데이터 무결성 제약조건
@@ -237,15 +245,207 @@ WHERE member_id = ?
 ORDER BY is_manual_grant DESC, expiration_date ASC
 ```
 
+---
+
 ## 6. ERD 다이어그램
 
-ERD 다이어그램은 별도 도구(예: ERDCloud, draw.io)를 사용하여 작성하고, `resource/` 폴더에 저장 예정입니다.
+### 6.1 ERD 다이어그램
 
-### 6.1 다이어그램 포함 내용
-- 모든 엔티티 및 속성
-- 엔티티 간 관계 (1:N, N:M 등)
-- 주요 인덱스 표시
-- 제약조건 표시
+```mermaid
+erDiagram
+    Member ||--o{ PointAccumulation : "1:N"
+    Member ||--o{ PointUsage : "1:N"
+    Member ||--o{ PointCancellation : "1:N"
+    PointUsage ||--o{ PointUsageDetail : "1:N"
+    PointAccumulation ||--o{ PointUsageDetail : "1:N"
+    
+    Member {
+        bigint id PK "AUTO_INCREMENT"
+        varchar member_no UK "UNIQUE, NOT NULL"
+        varchar name "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointAccumulation {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        bigint member_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        decimal available_amount "NOT NULL, DEFAULT 0"
+        date expiration_date "NOT NULL"
+        boolean is_manual_grant "NOT NULL, DEFAULT FALSE"
+        varchar status "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointUsage {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        bigint member_id FK "NOT NULL"
+        varchar order_number "NOT NULL"
+        decimal total_amount "NOT NULL, CHECK(total_amount > 0)"
+        decimal cancelled_amount "NOT NULL, DEFAULT 0"
+        varchar status "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointUsageDetail {
+        bigint id PK "AUTO_INCREMENT"
+        bigint point_usage_id FK "NOT NULL"
+        bigint point_accumulation_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        decimal cancelled_amount "NOT NULL, DEFAULT 0"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointConfig {
+        bigint id PK "AUTO_INCREMENT"
+        varchar config_key UK "UNIQUE, NOT NULL"
+        varchar config_value "NOT NULL"
+        varchar description
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointCancellation {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        varchar cancellation_type "NOT NULL"
+        varchar target_point_key "NOT NULL"
+        bigint member_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        varchar reason
+        timestamp created_at "NOT NULL"
+    }
+```
+
+### 6.2 관계 설명
+
+- **Member ↔ PointAccumulation**: 1:N 관계 (한 사용자는 여러 적립 건을 가짐)
+- **Member ↔ PointUsage**: 1:N 관계 (한 사용자는 여러 사용 건을 가짐)
+- **Member ↔ PointCancellation**: 1:N 관계 (한 사용자는 여러 취소 건을 가짐)
+- **PointUsage ↔ PointUsageDetail**: 1:N 관계 (한 사용 건은 여러 상세 내역을 가짐)
+- **PointAccumulation ↔ PointUsageDetail**: 1:N 관계 (한 적립 건은 여러 사용 상세 내역에 사용됨)
+
+### 6.3 주요 인덱스
+
+- **PointAccumulation**:
+  - `member_id, status, expiration_date` (복합 인덱스) - 사용 우선순위 조회용
+  - `is_manual_grant, expiration_date` (복합 인덱스) - 수기 지급 우선 조회용
+- **PointUsage**:
+  - `member_id, order_number` (복합 인덱스) - 사용자별 주문 조회용
+  - `order_number` - 주문번호로 조회용
+- **PointUsageDetail**:
+  - `point_usage_id` - 사용 건별 상세 조회용
+  - `point_accumulation_id` - 적립 건별 사용 내역 조회용
+- **PointCancellation**:
+  - `target_point_key` - 대상 건별 취소 내역 조회용
+  - `member_id, cancellation_type` (복합 인덱스) - 사용자별 취소 내역 조회용
+
+### 6.4 ERD 다이어그램 파일
+
+다음은 Mermaid 형식으로 작성된 ERD 다이어그램입니다:
+
+```mermaid
+erDiagram
+    Member ||--o{ PointAccumulation : "1:N"
+    Member ||--o{ PointUsage : "1:N"
+    Member ||--o{ PointCancellation : "1:N"
+    PointUsage ||--o{ PointUsageDetail : "1:N"
+    PointAccumulation ||--o{ PointUsageDetail : "1:N"
+    
+    Member {
+        bigint id PK "AUTO_INCREMENT"
+        varchar member_no UK "UNIQUE, NOT NULL"
+        varchar name "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointAccumulation {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        bigint member_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        decimal available_amount "NOT NULL, DEFAULT 0"
+        date expiration_date "NOT NULL"
+        boolean is_manual_grant "NOT NULL, DEFAULT FALSE"
+        varchar status "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointUsage {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        bigint member_id FK "NOT NULL"
+        varchar order_number "NOT NULL"
+        decimal total_amount "NOT NULL, CHECK(total_amount > 0)"
+        decimal cancelled_amount "NOT NULL, DEFAULT 0"
+        varchar status "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointUsageDetail {
+        bigint id PK "AUTO_INCREMENT"
+        bigint point_usage_id FK "NOT NULL"
+        bigint point_accumulation_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        decimal cancelled_amount "NOT NULL, DEFAULT 0"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointConfig {
+        bigint id PK "AUTO_INCREMENT"
+        varchar config_key UK "UNIQUE, NOT NULL"
+        varchar config_value "NOT NULL"
+        varchar description
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointCancellation {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        varchar cancellation_type "NOT NULL"
+        varchar target_point_key "NOT NULL"
+        bigint member_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        varchar reason
+        timestamp created_at "NOT NULL"
+    }
+```
+
+ERD 다이어그램 이미지 파일은 `resource/` 폴더에 저장되어 있습니다:
+- **Mermaid 소스 파일**: `resource/erd.mmd`
+- **PNG 이미지**: `resource/erd.png` (239KB)
+- **SVG 이미지**: `resource/erd.svg` (134KB, 벡터 이미지, 권장)
+- **PDF 문서**: `resource/erd.pdf` (84KB)
+- **이미지 변환 가이드**: `resource/README.md`
+
+#### Mermaid 이미지로 변환하기
+
+Mermaid 파일을 PNG, SVG, PDF 이미지로 변환하려면 다음 방법을 사용할 수 있습니다:
+
+##### **Mermaid CLI 사용** (권장)
+
+```bash
+npm install -g @mermaid-js/mermaid-cli
+cd resource/
+mmdc -i erd.mmd -o erd.png    # PNG
+mmdc -i erd.mmd -o erd.svg    # SVG (벡터, 권장)
+mmdc -i erd.mmd -o erd.pdf    # PDF
+```
+
+변환된 이미지 파일은 동일한 `resource/` 폴더에 저장하시면 됩니다.
+
+---
 
 ## 7. 성능 고려사항
 
@@ -258,9 +458,11 @@ ERD 다이어그램은 별도 도구(예: ERDCloud, draw.io)를 사용하여 작
 - 대용량 데이터를 고려한 파티셔닝 전략 (옵션)
 - 날짜 기준 파티셔닝 고려 (만료일, 생성일 기준)
 
+---
+
 ## 8. 다음 단계
 
-다음 단계에서는 도메인 모델 설계를 통해 엔티티를 Java 클래스로 구체화할 예정입니다.
+다음 단계에서는 도메인 모델 설계를 통해 엔티티를 Kotlin 클래스로 구체화할 예정입니다.
 
 ---
 

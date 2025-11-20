@@ -1,0 +1,69 @@
+erDiagram
+    Member ||--o{ PointAccumulation : "1:N"
+    Member ||--o{ PointUsage : "1:N"
+    Member ||--o{ PointCancellation : "1:N"
+    PointUsage ||--o{ PointUsageDetail : "1:N"
+    PointAccumulation ||--o{ PointUsageDetail : "1:N"
+    
+    Member {
+        bigint id PK "AUTO_INCREMENT"
+        varchar member_no UK "UNIQUE, NOT NULL"
+        varchar name "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointAccumulation {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        bigint member_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        decimal available_amount "NOT NULL, DEFAULT 0"
+        date expiration_date "NOT NULL"
+        boolean is_manual_grant "NOT NULL, DEFAULT FALSE"
+        varchar status "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointUsage {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        bigint member_id FK "NOT NULL"
+        varchar order_number "NOT NULL"
+        decimal total_amount "NOT NULL, CHECK(total_amount > 0)"
+        decimal cancelled_amount "NOT NULL, DEFAULT 0"
+        varchar status "NOT NULL"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointUsageDetail {
+        bigint id PK "AUTO_INCREMENT"
+        bigint point_usage_id FK "NOT NULL"
+        bigint point_accumulation_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        decimal cancelled_amount "NOT NULL, DEFAULT 0"
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointConfig {
+        bigint id PK "AUTO_INCREMENT"
+        varchar config_key UK "UNIQUE, NOT NULL"
+        varchar config_value "NOT NULL"
+        varchar description
+        timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
+    }
+    
+    PointCancellation {
+        bigint id PK "AUTO_INCREMENT"
+        varchar point_key UK "UNIQUE, NOT NULL"
+        varchar cancellation_type "NOT NULL"
+        varchar target_point_key "NOT NULL"
+        bigint member_id FK "NOT NULL"
+        decimal amount "NOT NULL, CHECK(amount > 0)"
+        varchar reason
+        timestamp created_at "NOT NULL"
+    }
