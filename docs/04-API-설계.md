@@ -61,21 +61,21 @@
 ```
 
 **Request DTO**:
-```java
-public class AccumulatePointRequest {
-    @NotNull
-    private Long memberId;
+```kotlin
+data class AccumulatePointRequest(
+    @field:NotNull
+    val memberId: Long,
     
-    @NotNull
-    @Min(1)
-    private Long amount;
+    @field:NotNull
+    @field:Min(1)
+    val amount: Long,
     
-    @Min(1)
-    @Max(1824)  // 약 5년
-    private Integer expirationDays;  // 옵션, 기본값: 설정값 사용
+    @field:Min(1)
+    @field:Max(1824)  // 약 5년
+    val expirationDays: Int? = null,  // 옵션, 기본값: 설정값 사용
     
-    private Boolean isManualGrant = false;  // 기본값: false
-}
+    val isManualGrant: Boolean = false  // 기본값: false
+)
 ```
 
 **Response Body**:
@@ -96,17 +96,17 @@ public class AccumulatePointRequest {
 ```
 
 **Response DTO**:
-```java
-public class AccumulatePointResponse {
-    private String pointKey;
-    private Long memberId;
-    private Long amount;
-    private Long availableAmount;
-    private LocalDate expirationDate;
-    private Boolean isManualGrant;
-    private String status;
-    private LocalDateTime createdAt;
-}
+```kotlin
+data class AccumulatePointResponse(
+    val pointKey: String,
+    val memberId: Long,
+    val amount: Long,
+    val availableAmount: Long,
+    val expirationDate: LocalDate,
+    val isManualGrant: Boolean,
+    val status: String,
+    val createdAt: LocalDateTime
+)
 ```
 
 **에러 케이스**:
@@ -132,10 +132,10 @@ public class AccumulatePointResponse {
 ```
 
 **Request DTO**:
-```java
-public class CancelAccumulationRequest {
-    private String reason;  // 옵션
-}
+```kotlin
+data class CancelAccumulationRequest(
+    val reason: String? = null  // 옵션
+)
 ```
 
 **Response Body**:
@@ -155,16 +155,16 @@ public class CancelAccumulationRequest {
 ```
 
 **Response DTO**:
-```java
-public class CancelAccumulationResponse {
-    private String pointKey;
-    private String targetPointKey;
-    private String cancellationType;
-    private Long memberId;
-    private Long amount;
-    private String reason;
-    private LocalDateTime createdAt;
-}
+```kotlin
+data class CancelAccumulationResponse(
+    val pointKey: String,
+    val targetPointKey: String,
+    val cancellationType: String,
+    val memberId: Long,
+    val amount: Long,
+    val reason: String?,
+    val createdAt: LocalDateTime
+)
 ```
 
 **에러 케이스**:
@@ -188,18 +188,18 @@ public class CancelAccumulationResponse {
 ```
 
 **Request DTO**:
-```java
-public class UsePointRequest {
-    @NotNull
-    private Long memberId;
+```kotlin
+data class UsePointRequest(
+    @field:NotNull
+    val memberId: Long,
     
-    @NotBlank
-    private String orderNumber;
+    @field:NotBlank
+    val orderNumber: String,
     
-    @NotNull
-    @Min(1)
-    private Long amount;
-}
+    @field:NotNull
+    @field:Min(1)
+    val amount: Long
+)
 ```
 
 **Response Body**:
@@ -229,22 +229,22 @@ public class UsePointRequest {
 ```
 
 **Response DTO**:
-```java
-public class UsePointResponse {
-    private String pointKey;
-    private Long memberId;
-    private String orderNumber;
-    private Long totalAmount;
-    private Long cancelledAmount;
-    private String status;
-    private List<UsageDetailResponse> usageDetails;
-    private LocalDateTime createdAt;
-}
+```kotlin
+data class UsePointResponse(
+    val pointKey: String,
+    val memberId: Long,
+    val orderNumber: String,
+    val totalAmount: Long,
+    val cancelledAmount: Long,
+    val status: String,
+    val usageDetails: List<UsageDetailResponse>,
+    val createdAt: LocalDateTime
+)
 
-public class UsageDetailResponse {
-    private String pointAccumulationKey;
-    private Long amount;
-}
+data class UsageDetailResponse(
+    val pointAccumulationKey: String,
+    val amount: Long
+)
 ```
 
 **에러 케이스**:
@@ -269,14 +269,13 @@ public class UsageDetailResponse {
 ```
 
 **Request DTO**:
-```java
-public class CancelUsageRequest {
-    @NotNull
-    @Min(1)
-    private Long amount;  // 취소할 금액 (전체 취소 시 null 가능)
+```kotlin
+data class CancelUsageRequest(
+    @field:Min(1)
+    val amount: Long? = null,  // 취소할 금액 (전체 취소 시 null 가능, null이 아닐 경우 1 이상)
     
-    private String reason;  // 옵션
-}
+    val reason: String? = null  // 옵션
+)
 ```
 
 **Response Body**:
@@ -303,23 +302,23 @@ public class CancelUsageRequest {
 ```
 
 **Response DTO**:
-```java
-public class CancelUsageResponse {
-    private String pointKey;
-    private String targetPointKey;
-    private String cancellationType;
-    private Long memberId;
-    private Long amount;
-    private String reason;
-    private List<NewAccumulationResponse> newAccumulations;  // 만료 포인트로 인한 신규 적립
-    private LocalDateTime createdAt;
-}
+```kotlin
+data class CancelUsageResponse(
+    val pointKey: String,
+    val targetPointKey: String,
+    val cancellationType: String,
+    val memberId: Long,
+    val amount: Long,
+    val reason: String?,
+    val newAccumulations: List<NewAccumulationResponse>,  // 만료 포인트로 인한 신규 적립
+    val createdAt: LocalDateTime
+)
 
-public class NewAccumulationResponse {
-    private String pointKey;
-    private Long amount;
-    private String reason;
-}
+data class NewAccumulationResponse(
+    val pointKey: String,
+    val amount: Long,
+    val reason: String?
+)
 ```
 
 **에러 케이스**:
@@ -368,23 +367,23 @@ public class NewAccumulationResponse {
 ```
 
 **Response DTO**:
-```java
-public class PointBalanceResponse {
-    private Long memberId;
-    private Long totalBalance;
-    private Long availableBalance;
-    private Long expiredBalance;
-    private List<AccumulationSummaryResponse> accumulations;
-}
+```kotlin
+data class PointBalanceResponse(
+    val memberId: Long,
+    val totalBalance: Long,
+    val availableBalance: Long,
+    val expiredBalance: Long,
+    val accumulations: List<AccumulationSummaryResponse>
+)
 
-public class AccumulationSummaryResponse {
-    private String pointKey;
-    private Long amount;
-    private Long availableAmount;
-    private LocalDate expirationDate;
-    private Boolean isManualGrant;
-    private String status;
-}
+data class AccumulationSummaryResponse(
+    val pointKey: String,
+    val amount: Long,
+    val availableAmount: Long,
+    val expirationDate: LocalDate,
+    val isManualGrant: Boolean,
+    val status: String
+)
 ```
 
 **에러 케이스**:
@@ -440,28 +439,28 @@ public class AccumulationSummaryResponse {
 ```
 
 **Response DTO**:
-```java
-public class PointHistoryResponse {
-    private List<UsageHistoryResponse> content;
-    private PageInfo page;
-}
+```kotlin
+data class PointHistoryResponse(
+    val content: List<UsageHistoryResponse>,
+    val page: PageInfo
+)
 
-public class UsageHistoryResponse {
-    private String pointKey;
-    private String orderNumber;
-    private Long totalAmount;
-    private Long cancelledAmount;
-    private String status;
-    private List<UsageDetailResponse> usageDetails;
-    private LocalDateTime createdAt;
-}
+data class UsageHistoryResponse(
+    val pointKey: String,
+    val orderNumber: String,
+    val totalAmount: Long,
+    val cancelledAmount: Long,
+    val status: String,
+    val usageDetails: List<UsageDetailResponse>,
+    val createdAt: LocalDateTime
+)
 
-public class PageInfo {
-    private Integer number;
-    private Integer size;
-    private Long totalElements;
-    private Integer totalPages;
-}
+data class PageInfo(
+    val number: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int
+)
 ```
 
 **에러 케이스**:
