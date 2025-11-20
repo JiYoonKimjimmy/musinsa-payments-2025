@@ -4,8 +4,6 @@
 
 무료 포인트 시스템의 데이터베이스 구조를 설계합니다. 1원 단위 추적, 만료일 관리, 수기 지급 구분 등의 요구사항을 반영합니다.
 
----
-
 ## 2. 엔티티 식별
 
 ### 2.1 핵심 엔티티
@@ -36,8 +34,6 @@
 #### 2.1.6 PointCancellation (포인트 취소)
 - 적립 취소 및 사용 취소 정보를 관리하는 엔티티
 - 취소 유형(적립 취소/사용 취소) 구분
-
----
 
 ## 3. 엔티티 상세 설계
 
@@ -168,8 +164,6 @@
 - target_point_key - 대상 건별 취소 내역 조회용
 - member_id, cancellation_type - 사용자별 취소 내역 조회용
 
----
-
 ## 4. 관계 정의
 
 ### 4.1 관계 다이어그램
@@ -208,8 +202,6 @@ Member (1) ────< (N) PointCancellation
 - **관계**: 1:N (한 사용자는 여러 취소 건을 가짐)
 - **외래키**: PointCancellation.member_id → Member.id
 
----
-
 ## 5. 제약조건 및 비즈니스 규칙
 
 ### 5.1 데이터 무결성 제약조건
@@ -244,8 +236,6 @@ WHERE member_id = ?
   AND expiration_date > CURRENT_DATE
 ORDER BY is_manual_grant DESC, expiration_date ASC
 ```
-
----
 
 ## 6. ERD 다이어그램
 
@@ -303,8 +293,6 @@ mmdc -i erd.mmd -o erd.pdf    # PDF
 
 변환된 이미지 파일은 동일한 `resource/` 폴더에 저장하시면 됩니다.
 
----
-
 ## 7. 성능 고려사항
 
 ### 7.1 인덱스 전략
@@ -315,8 +303,6 @@ mmdc -i erd.mmd -o erd.pdf    # PDF
 ### 7.2 파티셔닝 고려
 - 대용량 데이터를 고려한 파티셔닝 전략 (옵션)
 - 날짜 기준 파티셔닝 고려 (만료일, 생성일 기준)
-
----
 
 ## 8. 다음 단계
 
