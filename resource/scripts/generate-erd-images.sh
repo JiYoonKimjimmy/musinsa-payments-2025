@@ -4,6 +4,7 @@
 # 사용 전에 Mermaid CLI 설치 필요: npm install -g @mermaid-js/mermaid-cli
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESOURCE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "ERD 다이어그램을 이미지로 변환합니다..."
@@ -18,7 +19,7 @@ fi
 
 # PNG 생성
 echo "📸 PNG 이미지 생성 중..."
-mmdc -i erd.mmd -o erd.png -b white -w 2000 -H 1500
+mmdc -i erd.mmd -o "$RESOURCE_DIR/erd.png" -b white -w 2000 -H 1500
 if [ $? -eq 0 ]; then
     echo "✅ erd.png 생성 완료"
 else
@@ -27,7 +28,7 @@ fi
 
 # SVG 생성 (벡터 이미지, 권장)
 echo "🎨 SVG 이미지 생성 중..."
-mmdc -i erd.mmd -o erd.svg -b white
+mmdc -i erd.mmd -o "$RESOURCE_DIR/erd.svg" -b white
 if [ $? -eq 0 ]; then
     echo "✅ erd.svg 생성 완료"
 else
@@ -36,7 +37,7 @@ fi
 
 # PDF 생성
 echo "📄 PDF 문서 생성 중..."
-mmdc -i erd.mmd -o erd.pdf -b white
+mmdc -i erd.mmd -o "$RESOURCE_DIR/erd.pdf" -b white
 if [ $? -eq 0 ]; then
     echo "✅ erd.pdf 생성 완료"
 else
@@ -46,5 +47,5 @@ fi
 echo ""
 echo "🎉 이미지 변환 완료!"
 echo "생성된 파일:"
-ls -lh erd.* 2>/dev/null || echo "생성된 파일이 없습니다."
+ls -lh "$RESOURCE_DIR"/erd.* 2>/dev/null || echo "생성된 파일이 없습니다."
 

@@ -5,9 +5,10 @@
 ## 파일 목록
 
 ### ERD 다이어그램
-- `erd.mmd`: Mermaid 형식의 ERD 다이어그램 소스 파일
-- `generate-erd-images.sh`: 이미지 변환 스크립트 (Bash)
-- `generate-erd-images.js`: 이미지 변환 스크립트 (Node.js)
+- `erd.png`, `erd.svg`, `erd.pdf`: 생성된 ERD 이미지 파일들
+- `scripts/erd.mmd`: Mermaid 형식의 ERD 다이어그램 소스 파일
+- `scripts/generate-erd-images.sh`: 이미지 변환 스크립트 (Bash)
+- `scripts/generate-erd-images.js`: 이미지 변환 스크립트 (Node.js)
 
 ## Mermaid 다이어그램을 이미지로 변환하는 방법
 
@@ -16,7 +17,7 @@
 #### Bash 스크립트 사용
 ```bash
 # 실행 권한 확인 (이미 설정되어 있음)
-cd resource/
+cd resource/scripts/
 
 # 스크립트 실행
 ./generate-erd-images.sh
@@ -24,7 +25,7 @@ cd resource/
 
 #### Node.js 스크립트 사용
 ```bash
-cd resource/
+cd resource/scripts/
 
 # 필요한 패키지 설치 (최초 1회)
 npm install -g @mermaid-js/mermaid-cli
@@ -46,14 +47,16 @@ node generate-erd-images.js
 
 2. **이미지 변환**
    ```bash
-   # PNG로 변환
-   mmdc -i erd.mmd -o erd.png
+   cd resource/scripts/
+   
+   # PNG로 변환 (상위 디렉토리에 생성)
+   mmdc -i erd.mmd -o ../erd.png
 
    # SVG로 변환
-   mmdc -i erd.mmd -o erd.svg
+   mmdc -i erd.mmd -o ../erd.svg
 
    # PDF로 변환
-   mmdc -i erd.mmd -o erd.pdf
+   mmdc -i erd.mmd -o ../erd.pdf
    ```
 
 ### 방법 2: 온라인 도구 사용
@@ -69,7 +72,7 @@ node generate-erd-images.js
 
 1. **Mermaid Preview 확장 설치**
    - VS Code에서 "Mermaid Preview" 확장 설치
-   - `.mmd` 파일을 열고 미리보기로 확인 후 이미지로 저장
+   - `scripts/erd.mmd` 파일을 열고 미리보기로 확인 후 이미지로 저장
 
 ### 방법 4: Draw.io 사용
 

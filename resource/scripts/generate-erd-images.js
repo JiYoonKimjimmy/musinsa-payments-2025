@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 
 const scriptDir = __dirname;
+const resourceDir = path.join(scriptDir, '..');
 const erdFile = path.join(scriptDir, 'erd.mmd');
 
 console.log('ERD 다이어그램을 이미지로 변환합니다...\n');
@@ -43,7 +44,7 @@ exec('which mmdc', (error, stdout, stderr) => {
   ];
 
   formats.forEach((format, index) => {
-    const outputFile = path.join(scriptDir, `erd.${format.ext}`);
+    const outputFile = path.join(resourceDir, `erd.${format.ext}`);
     const command = `mmdc -i "${erdFile}" -o "${outputFile}" ${format.options}`;
 
     console.log(`📸 ${format.desc} 생성 중...`);
@@ -61,7 +62,7 @@ exec('which mmdc', (error, stdout, stderr) => {
           console.log('\n🎉 이미지 변환 완료!');
           console.log('\n생성된 파일:');
           formats.forEach(f => {
-            const file = path.join(scriptDir, `erd.${f.ext}`);
+            const file = path.join(resourceDir, `erd.${f.ext}`);
             if (fs.existsSync(file)) {
               const stats = fs.statSync(file);
               console.log(`  - erd.${f.ext} (${(stats.size / 1024).toFixed(2)} KB)`);
