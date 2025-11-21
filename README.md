@@ -42,13 +42,13 @@
 ### 개발 환경
 
 - **Java**: 21
-- **Spring Boot**: 3.5.7 (Stable)
+- **Spring Boot**: 3.5.7
 - **Spring Data JPA**: 데이터 영속성
 - **H2 Database**: 개발 환경 데이터베이스
 
 ### 빌드 도구
 
-- **Gradle**: 8.x 이상
+- **Gradle**: 8.14.3
 
 ### 테스트
 
@@ -98,8 +98,8 @@ com.musinsa.payments.point
 
 ### 사전 요구사항
 
-- **JDK**: 21 이상
-- **Gradle**: 8.x 이상 (또는 Gradle Wrapper 사용)
+- **JDK**: 21
+- **Gradle**: 8.14.3
 
 ### 빌드 명령어
 
@@ -294,7 +294,7 @@ curl -X GET "http://localhost:8080/api/points/history/1?page=0&size=20"
 
 #### 2. 기술 스택
 - [x] Java 21
-- [x] Spring Boot 3.5.7 (Stable)
+- [x] Spring Boot 3.5.7
 - [x] H2 Database
 
 #### 3. 문서화
@@ -375,12 +375,9 @@ curl -X GET "http://localhost:8080/api/points/history/1?page=0&size=20"
 
 ### ERD 다이어그램
 
-ERD 다이어그램은 `resource/` 디렉토리에 저장되어 있습니다:
+![ERD 다이어그램](resource/erd.svg)
 
-- **PNG 이미지**: `resource/erd.png`
-- **SVG 이미지**: `resource/erd.svg` (벡터 이미지, 권장)
-- **PDF 문서**: `resource/erd.pdf`
-- **Mermaid 소스**: `resource/erd.mmd`
+> ERD 다이어그램은 `resource/` 디렉토리에 저장되어 있습니다.
 
 ERD 설계 문서: [`docs/02-ERD-설계.md`](docs/02-ERD-설계.md)
 
