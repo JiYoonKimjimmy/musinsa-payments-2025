@@ -73,22 +73,72 @@
 
 ```
 com.musinsa.payments.point
-├── domain              # 도메인 레이어 (핵심 비즈니스 로직)
-│   ├── entity          # 도메인 엔티티
-│   ├── valueobject     # 값 객체 (Money, OrderNumber, PointKey)
-│   ├── repository      # 리포지토리 인터페이스 (포트)
-│   ├── service         # 도메인 서비스
-│   └── exception       # 도메인 예외
-├── port                # 포트 레이어
-│   ├── in              # 인바운드 포트 (Use Case 인터페이스)
-│   └── out             # 아웃바운드 포트 (영속성, 설정 등)
-├── adapter             # 어댑터 레이어
-│   ├── in              # 인바운드 어댑터
-│   │   └── web         # REST API 컨트롤러
-│   └── out             # 아웃바운드 어댑터
-│       └── persistence # JPA 구현
-└── service             # 애플리케이션 서비스
+├── domain                   # 도메인 레이어 (핵심 비즈니스 로직)
+│   ├── entity               # 도메인 엔티티
+│   ├── valueobject          # 값 객체 (Money, OrderNumber, PointKey)
+│   ├── service              # 도메인 서비스
+│   └── exception            # 도메인 예외
+├── application              # 애플리케이션 레이어 (유스케이스)
+│   ├── port                 # 포트 인터페이스
+│   │   ├── in               # 인바운드 포트 (Use Case 인터페이스)
+│   │   └── out              # 아웃바운드 포트 (영속성, 설정 등)
+│   │       ├── persistence  # 영속성 포트 인터페이스
+│   │       └── config       # 설정 포트 인터페이스
+│   └── service              # 애플리케이션 서비스 (Use Case 구현)
+├── infrastructure           # 인프라스트럭처 레이어 (외부 시스템 통신)
+│   ├── persistence          # 영속성 구현
+│   │   ├── jpa              # JPA 엔티티 및 리포지토리
+│   │   ├── adapter          # 영속성 어댑터 (포트 구현)
+│   │   └── mapper           # 엔티티 매퍼
+│   ├── config               # 설정 어댑터 (포트 구현)
+│   └── external             # 외부 API 어댑터 (필요시)
+└── presentation             # 프레젠테이션 레이어 (사용자 인터페이스)
+    ├── web                  # 웹 어댑터
+    │   ├── controller       # REST 컨트롤러
+    │   ├── dto              # 요청/응답 DTO
+    │   └── mapper           # DTO 매퍼
+    └── cli                  # CLI 어댑터 (필요시)
 ```
+
+### 레이어별 역할
+
+- **Domain 레이어**: 핵심 비즈니스 로직을 담당하는 순수한 도메인 모델
+  - 엔티티, 값 객체, 도메인 서비스, 도메인 예외
+  - 다른 레이어에 의존하지 않는 독립적인 레이어
+  - 리포지토리 인터페이스는 포함하지 않음 (포트는 Application 레이어에서 정의)
+
+- **Application 레이어**: 비즈니스 유스케이스를 조합하고 조율하는 레이어
+  - 포트 인터페이스 정의 (인바운드/아웃바운드)
+    - 인바운드 포트: Use Case 인터페이스
+    - 아웃바운드 포트: 영속성, 설정 등 외부 시스템과의 인터페이스
+  - 애플리케이션 서비스가 Use Case를 구현
+
+- **Infrastructure 레이어**: 외부 시스템과의 통신을 담당하는 레이어
+  - Application 레이어의 아웃바운드 포트 인터페이스를 구현
+  - 영속성 구현 (JPA, 데이터베이스)
+  - 설정 관리
+  - 외부 API 연동
+
+- **Presentation 레이어**: 사용자 인터페이스를 담당하는 레이어
+  - Application 레이어의 인바운드 포트를 호출
+  - REST API 컨트롤러
+  - DTO 변환
+  - HTTP 요청/응답 처리
+
+### 의존성 방향
+
+```
+Presentation → Application → Domain
+              ↓              ↑
+              └── port.out ──┘
+                              ↑
+Infrastructure ───────────────┘
+```
+
+- **Presentation**은 **Application**의 인바운드 포트에 의존
+- **Application**은 **Domain** 모델과 아웃바운드 포트 인터페이스에 의존
+- **Infrastructure**는 **Application**의 아웃바운드 포트 인터페이스를 구현하고 **Domain** 모델 사용
+- **Domain**은 다른 레이어에 의존하지 않음 (순수한 비즈니스 로직만 포함)
 
 ---
 
@@ -416,10 +466,10 @@ curl -X GET "http://localhost:8080/api/points/history/1?page=0&size=20"
 
 본 프로젝트는 **헥사고날 아키텍처(Hexagonal Architecture)**를 적용하여 설계되었습니다:
 
-- **도메인 레이어**: 핵심 비즈니스 로직 (엔티티, 값 객체, 도메인 서비스)
-- **포트 레이어**: 인터페이스 정의 (인바운드/아웃바운드)
-- **어댑터 레이어**: 외부 시스템과의 연결 (웹, 영속성 등)
-- **서비스 레이어**: 애플리케이션 서비스 (Use Case 구현)
+- **Domain 레이어**: 핵심 비즈니스 로직 (엔티티, 값 객체, 도메인 서비스, 도메인 예외)
+- **Application 레이어**: 비즈니스 유스케이스 조합 및 조율 (포트 인터페이스, 애플리케이션 서비스)
+- **Infrastructure 레이어**: 외부 시스템과의 통신 (영속성 구현, 설정 관리, 외부 API)
+- **Presentation 레이어**: 사용자 인터페이스 (REST API 컨트롤러, DTO 변환)
 
 ---
 
