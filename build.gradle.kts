@@ -28,6 +28,9 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     
+    // SpringDoc OpenAPI 3 (Swagger)
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    
     // Database
     runtimeOnly("com.h2database:h2")
     
