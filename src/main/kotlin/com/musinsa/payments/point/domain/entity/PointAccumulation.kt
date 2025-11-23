@@ -52,6 +52,66 @@ class PointAccumulation {
     }
     
     /**
+     * 이미 저장된 엔티티를 위한 생성자 (만료일 검증 없음)
+     * Entity Mapper에서 사용하기 위한 내부 생성자입니다.
+     */
+    private constructor(
+        id: Long?,
+        pointKey: String,
+        memberId: Long,
+        amount: Money,
+        availableAmount: Money,
+        expirationDate: LocalDate,
+        isManualGrant: Boolean,
+        status: PointAccumulationStatus,
+        createdAt: LocalDateTime,
+        updatedAt: LocalDateTime
+    ) {
+        this.id = id
+        this.pointKey = pointKey
+        this.memberId = memberId
+        this.amount = amount
+        this.availableAmount = availableAmount
+        this.expirationDate = expirationDate
+        this.isManualGrant = isManualGrant
+        this.status = status
+        this.createdAt = createdAt
+        this.updatedAt = updatedAt
+    }
+    
+    companion object {
+        /**
+         * 이미 저장된 엔티티를 복원하기 위한 팩토리 메서드
+         * Entity Mapper에서 사용합니다.
+         */
+        fun restore(
+            id: Long?,
+            pointKey: String,
+            memberId: Long,
+            amount: Money,
+            availableAmount: Money,
+            expirationDate: LocalDate,
+            isManualGrant: Boolean,
+            status: PointAccumulationStatus,
+            createdAt: LocalDateTime,
+            updatedAt: LocalDateTime
+        ): PointAccumulation {
+            return PointAccumulation(
+                id = id,
+                pointKey = pointKey,
+                memberId = memberId,
+                amount = amount,
+                availableAmount = availableAmount,
+                expirationDate = expirationDate,
+                isManualGrant = isManualGrant,
+                status = status,
+                createdAt = createdAt,
+                updatedAt = updatedAt
+            )
+        }
+    }
+    
+    /**
      * 취소 가능 여부 확인
      * 적립 상태이고 사용된 금액이 없어야 취소 가능합니다.
      */

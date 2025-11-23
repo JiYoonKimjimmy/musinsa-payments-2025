@@ -24,21 +24,21 @@ class PointEntityMapper {
     
     /**
      * JPA 엔티티를 도메인 엔티티로 변환
+     * 이미 저장된 엔티티이므로 만료일 검증을 우회하기 위해 restore 메서드를 사용합니다.
      */
     fun toDomain(entity: PointAccumulationEntity): PointAccumulation {
-        val domain = PointAccumulation(
+        return PointAccumulation.restore(
+            id = entity.id,
             pointKey = entity.pointKey,
             memberId = entity.memberId,
             amount = Money.of(entity.amount),
+            availableAmount = Money.of(entity.availableAmount),
             expirationDate = entity.expirationDate,
             isManualGrant = entity.isManualGrant,
             status = entity.status,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt
         )
-        domain.id = entity.id
-        domain.availableAmount = Money.of(entity.availableAmount)
-        return domain
     }
     
     /**
