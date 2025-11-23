@@ -3,11 +3,13 @@ package com.musinsa.payments.point.domain.service
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.exception.InsufficientPointException
 import com.musinsa.payments.point.domain.valueobject.Money
+import org.springframework.stereotype.Component
 
 /**
  * 포인트 사용 우선순위 도메인 서비스
  * 포인트 사용 시 우선순위에 따라 적립 건을 선택합니다.
  */
+@Component
 class PointUsagePriorityService {
     
     /**

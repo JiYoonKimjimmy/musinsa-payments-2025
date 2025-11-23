@@ -20,6 +20,13 @@ interface PointAccumulationPersistencePort {
     fun save(accumulation: PointAccumulation): PointAccumulation
     
     /**
+     * ID로 조회
+     * @param id 포인트 적립 ID
+     * @return 포인트 적립 엔티티 (없으면 empty)
+     */
+    fun findById(id: Long): Optional<PointAccumulation>
+    
+    /**
      * 포인트 키로 조회
      * @param pointKey 포인트 키
      * @return 포인트 적립 엔티티 (없으면 empty)

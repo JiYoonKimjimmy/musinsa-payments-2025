@@ -25,6 +25,11 @@ class PointAccumulationPersistenceAdapter(
         return pointEntityMapper.toDomain(savedEntity)
     }
     
+    override fun findById(id: Long): Optional<PointAccumulation> {
+        return pointAccumulationJpaRepository.findById(id)
+            .map { pointEntityMapper.toDomain(it) }
+    }
+    
     override fun findByPointKey(pointKey: String): Optional<PointAccumulation> {
         return pointAccumulationJpaRepository.findByPointKey(pointKey)
             .map { pointEntityMapper.toDomain(it) }
