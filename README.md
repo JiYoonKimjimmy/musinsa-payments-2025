@@ -168,7 +168,7 @@ cd musinsa-payments-2025
 
 ### 빌드 결과물
 
-- `build/libs/musinsa-payments-point-1.0.0.jar`: 실행 가능한 JAR 파일
+- `build/libs/musinsa-payments-0.0.1-SNAPSHOT.jar`: 실행 가능한 JAR 파일
 
 ---
 
@@ -178,7 +178,7 @@ cd musinsa-payments-2025
 
 ```bash
 # JAR 파일 실행
-java -jar build/libs/musinsa-payments-point-1.0.0.jar
+java -jar build/libs/musinsa-payments-0.0.1-SNAPSHOT.jar
 
 # 또는 Gradle로 직접 실행
 ./gradlew bootRun
@@ -283,6 +283,29 @@ java -jar build/libs/musinsa-payments-point-1.0.0.jar
   - `size`: 페이지 크기 (기본값: 20)
   - `orderNumber`: 주문번호로 필터링 (옵션)
 
+#### 7. 포인트 설정 조회 (관리자)
+
+- **GET** `/api/admin/points/config`
+- **설명**: 모든 포인트 설정을 조회합니다.
+
+#### 8. 특정 포인트 설정 조회 (관리자)
+
+- **GET** `/api/admin/points/config/{configKey}`
+- **Path Parameter**: `configKey` - 설정 키 (예: MAX_ACCUMULATION_AMOUNT_PER_TIME)
+- **설명**: 특정 설정을 조회합니다.
+
+#### 9. 포인트 설정 업데이트 (관리자)
+
+- **PUT** `/api/admin/points/config/{configKey}`
+- **Path Parameter**: `configKey` - 설정 키
+- **Request Body**:
+```json
+{
+  "configValue": "200000",
+  "description": "1회 최대 적립 금액을 20만원으로 변경"
+}
+```
+
 ### API 사용 예시
 
 #### cURL 예시
@@ -312,6 +335,20 @@ curl -X GET http://localhost:8080/api/points/balance/1
 
 # 포인트 사용 내역 조회
 curl -X GET "http://localhost:8080/api/points/history/1?page=0&size=20"
+
+# 모든 포인트 설정 조회 (관리자)
+curl -X GET http://localhost:8080/api/admin/points/config
+
+# 특정 포인트 설정 조회 (관리자)
+curl -X GET http://localhost:8080/api/admin/points/config/MAX_ACCUMULATION_AMOUNT_PER_TIME
+
+# 포인트 설정 업데이트 (관리자)
+curl -X PUT http://localhost:8080/api/admin/points/config/MAX_ACCUMULATION_AMOUNT_PER_TIME \
+  -H "Content-Type: application/json" \
+  -d '{
+    "configValue": "200000",
+    "description": "1회 최대 적립 금액을 20만원으로 변경"
+  }'
 ```
 
 ---
@@ -426,6 +463,134 @@ curl -X GET "http://localhost:8080/api/points/history/1?page=0&size=20"
 ![ERD 다이어그램](resource/erd.svg)
 
 > ERD 다이어그램은 `resource/` 디렉토리에 저장되어 있습니다.
+> - PDF: `resource/erd.pdf`
+> - PNG: `resource/erd.png`
+> - SVG: `resource/erd.svg`
+> 
+> ERD 설계 문서: [`docs/02-ERD-설계.md`](docs/02-ERD-설계.md)
+
+### AWS 아키텍처 다이어그램
+
+![AWS 아키텍처 다이어그램](resource/aws-architecture.svg)
+
+> AWS 아키텍처 다이어그램은 `resource/` 디렉토리에 저장되어 있습니다.
+> - PDF: `resource/aws-architecture.pdf`
+> - PNG: `resource/aws-architecture.png`
+> - SVG: `resource/aws-architecture.svg`
+> 
+> AWS 아키텍처 설계 문서: [`docs/08-AWS-아키텍처-설계.md`](docs/08-AWS-아키텍처-설계.md)
+
+### 설계 문서
+
+모든 설계 문서는 `docs/` 디렉토리에 있습니다:
+
+- [`01-도메인-분석.md`](docs/01-도메인-분석.md): 도메인 분석 및 요구사항 정리
+- [`02-ERD-설계.md`](docs/02-ERD-설계.md): 데이터베이스 설계
+- [`03-도메인-모델-설계.md`](docs/03-도메인-모델-설계.md): 도메인 모델 설계
+- [`04-API-설계.md`](docs/04-API-설계.md): REST API 설계
+- [`05-비즈니스-로직-설계.md`](docs/05-비즈니스-로직-설계.md): 비즈니스 로직 설계
+- [`06-설정-관리-설계.md`](docs/06-설정-관리-설계.md): 설정 관리 설계
+- [`07-프로젝트-구조-설계.md`](docs/07-프로젝트-구조-설계.md): 헥사고날 아키텍처 기반 프로젝트 구조
+- [`08-AWS-아키텍처-설계.md`](docs/08-AWS-아키텍처-설계.md): AWS 아키텍처 설계
+- [`09-테스트-전략.md`](docs/09-테스트-전략.md): 테스트 전략
+- [`10-문서화-계획.md`](docs/10-문서화-계획.md): 문서화 계획
+
+---
+
+## 배포
+
+### 실행 스크립트 사용
+
+#### Linux/Mac
+
+```bash
+# 실행 스크립트에 실행 권한 부여 (최초 1회)
+chmod +x scripts/start.sh
+
+# 애플리케이션 실행
+./scripts/start.sh
+
+# 포트 변경하여 실행
+SERVER_PORT=9090 ./scripts/start.sh
+
+# JVM 옵션 커스터마이징
+JAVA_OPTS="-Xms1g -Xmx2g" ./scripts/start.sh
+```
+
+#### Windows
+
+```cmd
+REM 애플리케이션 실행
+scripts\start.bat
+
+REM 포트 변경하여 실행
+set SERVER_PORT=9090
+scripts\start.bat
+
+REM JVM 옵션 커스터마이징
+set JAVA_OPTS=-Xms1g -Xmx2g
+scripts\start.bat
+```
+
+### Docker를 사용한 배포
+
+#### Dockerfile로 빌드 및 실행
+
+```bash
+# Docker 이미지 빌드
+docker build -t musinsa-point-service:latest .
+
+# 컨테이너 실행
+docker run -d \
+  --name musinsa-point-service \
+  -p 8080:8080 \
+  musinsa-point-service:latest
+
+# 로그 확인
+docker logs -f musinsa-point-service
+
+# 컨테이너 중지 및 제거
+docker stop musinsa-point-service
+docker rm musinsa-point-service
+```
+
+#### Docker Compose 사용
+
+```bash
+# 서비스 시작
+docker-compose up -d
+
+# 서비스 중지
+docker-compose down
+
+# 로그 확인
+docker-compose logs -f
+
+# 서비스 재시작
+docker-compose restart
+```
+
+#### Docker Compose 환경 변수 설정
+
+`docker-compose.yml` 파일을 수정하거나 환경 변수를 설정하여 애플리케이션 설정을 변경할 수 있습니다:
+
+```yaml
+environment:
+  - SERVER_PORT=8080
+  - SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb
+  - JAVA_OPTS=-Xms512m -Xmx1024m
+```
+
+### 배포 체크리스트
+
+배포 전 다음 사항을 확인하세요:
+
+- [ ] JAR 파일이 정상적으로 빌드되었는가?
+- [ ] 모든 테스트가 통과했는가?
+- [ ] 환경 변수가 올바르게 설정되었는가?
+- [ ] 데이터베이스 연결 정보가 올바른가?
+- [ ] 포트가 충돌하지 않는가?
+- [ ] 로그 디렉토리에 쓰기 권한이 있는가?
 
 ---
 

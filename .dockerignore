@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# Build
+build/
+.gradle/
+out/
+target/
+
+# Logs
+*.log
+logs/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts (빌드에는 필요 없음)
+scripts/
+
+# Test
+src/test/
+
+# Resource scripts (빌드에는 필요 없음)
+resource/scripts/
+
+# 기타
+*.swp
+*.swo
+*~
+.env
+.env.local
+

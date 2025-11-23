@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 포인트 시스템 애플리케이션
+  point-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: musinsa-point-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+      # H2 데이터베이스 설정 (메모리 모드)
+      - SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=
+      - SPRING_H2_CONSOLE_ENABLED=true
+      # JVM 옵션
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
+    # 재시작 정책
+    restart: unless-stopped
+    # 헬스 체크
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # 로그 설정
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # H2 데이터베이스 (파일 모드로 사용하려면 주석 해제)
+  # h2-database:
+  #   image: oscarfonts/h2:latest
+  #   container_name: musinsa-h2-database
+  #   ports:
+  #     - "8082:8082"  # H2 콘솔
+  #     - "9092:9092"  # TCP 서버
+  #   environment:
+  #     - H2_OPTIONS=-web -webAllowOthers -tcp -tcpAllowOthers
+  #   volumes:
+  #     - h2-data:/opt/h2-data
+  #   restart: unless-stopped
+
+# 볼륨 정의 (H2 파일 모드 사용 시)
+# volumes:
+#   h2-data:
+

@@ -1,1 +1,1 @@
-rootProject.name = "musina-payments"
+rootProject.name = "musinsa-payments"

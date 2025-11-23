@@ -1,0 +1,64 @@
+graph TB
+    Internet[Internet]
+    Route53[Route 53<br/>DNS]
+    ALB[Application Load Balancer<br/>SSL/TLS Termination<br/>Health Check]
+    
+    subgraph VPC["VPC (10.0.0.0/16)"]
+        subgraph PublicSubnet1["Public Subnet AZ-1<br/>(10.0.1.0/24)"]
+            NAT1[NAT Gateway]
+        end
+        
+        subgraph PrivateSubnet1["Private Subnet AZ-1<br/>(10.0.10.0/24)"]
+            ECS1[ECS Service AZ-1]
+            Fargate1[Fargate Task<br/>Spring Boot]
+            ElastiCache[ElastiCache Redis<br/>Config Cache]
+            RDS_Primary[RDS Aurora<br/>Primary<br/>PostgreSQL]
+        end
+        
+        subgraph PublicSubnet2["Public Subnet AZ-2<br/>(10.0.2.0/24)"]
+            NAT2[NAT Gateway]
+        end
+        
+        subgraph PrivateSubnet2["Private Subnet AZ-2<br/>(10.0.20.0/24)"]
+            ECS2[ECS Service AZ-2]
+            Fargate2[Fargate Task<br/>Spring Boot]
+            RDS_Replica[RDS Aurora<br/>Read Replica<br/>PostgreSQL]
+        end
+    end
+    
+    CloudWatch[CloudWatch<br/>Monitoring & Logging]
+    
+    Internet --> Route53
+    Route53 --> ALB
+    ALB --> ECS1
+    ALB --> ECS2
+    ECS1 --> Fargate1
+    ECS2 --> Fargate2
+    Fargate1 --> ElastiCache
+    Fargate1 --> RDS_Primary
+    Fargate2 --> ElastiCache
+    Fargate2 --> RDS_Replica
+    RDS_Primary --> RDS_Replica
+    Fargate1 --> CloudWatch
+    Fargate2 --> CloudWatch
+    RDS_Primary --> CloudWatch
+    ElastiCache --> CloudWatch
+    ALB --> CloudWatch
+    
+    style Internet fill:#e1f5ff
+    style Route53 fill:#ff9900
+    style ALB fill:#ff9900
+    style ECS1 fill:#ff9900
+    style ECS2 fill:#ff9900
+    style Fargate1 fill:#ff9900
+    style Fargate2 fill:#ff9900
+    style ElastiCache fill:#ff9900
+    style RDS_Primary fill:#ff9900
+    style RDS_Replica fill:#ff9900
+    style CloudWatch fill:#ff9900
+    style VPC fill:#f9f9f9
+    style PublicSubnet1 fill:#e8f4f8
+    style PublicSubnet2 fill:#e8f4f8
+    style PrivateSubnet1 fill:#fff4e6
+    style PrivateSubnet2 fill:#fff4e6
+
