@@ -2,12 +2,14 @@ package com.musinsa.payments.point.infrastructure.persistence.jpa.mapper
 
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointConfig
+import com.musinsa.payments.point.domain.entity.PointConfigHistory
 import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.domain.entity.PointUsageDetail
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
 import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointAccumulationEntity
 import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointConfigEntity
+import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointConfigHistoryEntity
 import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointUsageDetailEntity
 import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointUsageEntity
 import org.springframework.stereotype.Component
@@ -190,6 +192,44 @@ class PointEntityMapper {
      * JPA 엔티티 목록을 도메인 엔티티 목록으로 변환
      */
     fun toConfigDomainList(entities: List<PointConfigEntity>): List<PointConfig> {
+        return entities.map { toDomain(it) }
+    }
+    
+    // ==================== PointConfigHistory ====================
+    
+    /**
+     * JPA 엔티티를 도메인 엔티티로 변환
+     */
+    fun toDomain(entity: PointConfigHistoryEntity): PointConfigHistory {
+        val domain = PointConfigHistory(
+            configKey = entity.configKey,
+            newValue = entity.newValue,
+            oldValue = entity.oldValue,
+            changedBy = entity.changedBy,
+            changedAt = entity.changedAt
+        )
+        domain.id = entity.id
+        return domain
+    }
+    
+    /**
+     * 도메인 엔티티를 JPA 엔티티로 변환
+     */
+    fun toEntity(domain: PointConfigHistory): PointConfigHistoryEntity {
+        val entity = PointConfigHistoryEntity()
+        entity.id = domain.id
+        entity.configKey = domain.configKey
+        entity.oldValue = domain.oldValue
+        entity.newValue = domain.newValue
+        entity.changedBy = domain.changedBy
+        entity.changedAt = domain.changedAt
+        return entity
+    }
+    
+    /**
+     * JPA 엔티티 목록을 도메인 엔티티 목록으로 변환
+     */
+    fun toConfigHistoryDomainList(entities: List<PointConfigHistoryEntity>): List<PointConfigHistory> {
         return entities.map { toDomain(it) }
     }
 }

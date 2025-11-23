@@ -107,6 +107,36 @@ class GlobalExceptionHandler {
             .body(BaseResponse.error("CANNOT_CANCEL_DETAIL", e.message ?: "상세 내역을 취소할 수 없습니다."))
     }
     
+    /**
+     * 설정을 찾을 수 없음 예외 처리
+     */
+    @ExceptionHandler(ConfigNotFoundException::class)
+    fun handleConfigNotFoundException(e: ConfigNotFoundException): ResponseEntity<BaseResponse<Nothing>> {
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(BaseResponse.error("CONFIG_NOT_FOUND", e.message ?: "설정을 찾을 수 없습니다."))
+    }
+    
+    /**
+     * 유효하지 않은 설정 값 예외 처리
+     */
+    @ExceptionHandler(InvalidConfigValueException::class)
+    fun handleInvalidConfigValueException(e: InvalidConfigValueException): ResponseEntity<BaseResponse<Nothing>> {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(BaseResponse.error("INVALID_CONFIG_VALUE", e.message ?: "설정 값이 유효하지 않습니다."))
+    }
+    
+    /**
+     * 유효하지 않은 설정 키 예외 처리
+     */
+    @ExceptionHandler(InvalidConfigKeyException::class)
+    fun handleInvalidConfigKeyException(e: InvalidConfigKeyException): ResponseEntity<BaseResponse<Nothing>> {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(BaseResponse.error("INVALID_CONFIG_KEY", e.message ?: "설정 키가 유효하지 않습니다."))
+    }
+    
     // ========== 일반 예외 처리 ==========
     
     /**

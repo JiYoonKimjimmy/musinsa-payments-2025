@@ -1,12 +1,17 @@
 package com.musinsa.payments.point.application.service
 
+import com.musinsa.payments.point.application.port.output.config.PointConfigHistoryPort
 import com.musinsa.payments.point.application.port.output.config.PointConfigPort
 import com.musinsa.payments.point.domain.entity.PointConfig
+import com.musinsa.payments.point.domain.entity.PointConfigHistory
+import com.musinsa.payments.point.domain.exception.ConfigNotFoundException
+import com.musinsa.payments.point.domain.exception.InvalidConfigValueException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import java.util.*
 
 /**
@@ -15,8 +20,10 @@ import java.util.*
 class PointConfigServiceTest : BehaviorSpec({
     
     val pointConfigPort = mockk<PointConfigPort>()
+    val pointConfigValidator = mockk<PointConfigValidator>()
+    val pointConfigHistoryPort = mockk<PointConfigHistoryPort>()
     
-    val service = PointConfigService(pointConfigPort)
+    val service = PointConfigService(pointConfigPort, pointConfigValidator, pointConfigHistoryPort)
     
     Given("존재하는 설정 키가 있을 때") {
         val configKey = "MAX_ACCUMULATION_AMOUNT_PER_TIME"
@@ -175,6 +182,48 @@ class PointConfigServiceTest : BehaviorSpec({
             Then("IllegalArgumentException이 발생해야 한다") {
                 shouldThrow<IllegalArgumentException> {
                     service.getIntValue(configKey)
+                }
+            }
+        }
+    }
+    
+    Given("설정 업데이트") {
+        val configKey = "MAX_ACCUMULATION_AMOUNT_PER_TIME"
+        val config = PointConfig(configKey, "100000")
+        config.id = 1L
+        
+        When("유효한 설정 값으로 업데이트하면") {
+            every { pointConfigPort.findByConfigKey(configKey) } returns Optional.of(config)
+            every { pointConfigValidator.validateConfigValue(configKey, "200000") } returns Unit
+            every { pointConfigPort.save(any()) } returns config.apply { configValue = "200000" }
+            every { pointConfigHistoryPort.save(any()) } returns mockk<PointConfigHistory>()
+            
+            val result = service.updateConfig(configKey, "200000")
+            
+            Then("설정이 업데이트되어야 한다") {
+                result.configValue shouldBe "200000"
+                verify { pointConfigPort.save(any()) }
+                verify { pointConfigHistoryPort.save(any()) }
+            }
+        }
+        
+        When("존재하지 않는 설정 키로 업데이트하면") {
+            every { pointConfigPort.findByConfigKey(configKey) } returns Optional.empty()
+            
+            Then("ConfigNotFoundException이 발생해야 한다") {
+                shouldThrow<ConfigNotFoundException> {
+                    service.updateConfig(configKey, "200000")
+                }
+            }
+        }
+        
+        When("유효하지 않은 설정 값으로 업데이트하면") {
+            every { pointConfigPort.findByConfigKey(configKey) } returns Optional.of(config)
+            every { pointConfigValidator.validateConfigValue(configKey, "invalid") } throws InvalidConfigValueException("유효하지 않은 값")
+            
+            Then("InvalidConfigValueException이 발생해야 한다") {
+                shouldThrow<InvalidConfigValueException> {
+                    service.updateConfig(configKey, "invalid")
                 }
             }
         }

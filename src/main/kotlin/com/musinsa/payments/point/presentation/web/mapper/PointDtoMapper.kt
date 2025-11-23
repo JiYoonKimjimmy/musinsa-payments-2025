@@ -1,6 +1,7 @@
 package com.musinsa.payments.point.presentation.web.mapper
 
 import com.musinsa.payments.point.domain.entity.PointAccumulation
+import com.musinsa.payments.point.domain.entity.PointConfig
 import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.presentation.web.dto.response.*
 import org.springframework.data.domain.Page
@@ -153,6 +154,27 @@ object PointDtoMapper {
             hasNext = page.hasNext(),
             hasPrevious = page.hasPrevious()
         )
+    }
+    
+    // ==================== PointConfig ====================
+    
+    /**
+     * PointConfig → PointConfigResponse 변환
+     */
+    fun toPointConfigResponse(config: PointConfig): PointConfigResponse {
+        return PointConfigResponse(
+            configKey = config.configKey,
+            configValue = config.configValue,
+            description = config.description,
+            updatedAt = config.updatedAt
+        )
+    }
+    
+    /**
+     * List<PointConfig> → List<PointConfigResponse> 변환
+     */
+    fun toPointConfigListResponse(configs: List<PointConfig>): List<PointConfigResponse> {
+        return configs.map { toPointConfigResponse(it) }
     }
 }
 
