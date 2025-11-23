@@ -1,6 +1,6 @@
 package com.musinsa.payments.point.infrastructure.persistence.adapter
 
-import com.musinsa.payments.point.application.port.out.persistence.PointAccumulationPersistencePort
+import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.domain.valueobject.Money

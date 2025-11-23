@@ -1,4 +1,4 @@
-package com.musinsa.payments.point.application.port.out
+package com.musinsa.payments.point.application.port.output
 
 import com.musinsa.payments.point.domain.valueobject.PointKey
 

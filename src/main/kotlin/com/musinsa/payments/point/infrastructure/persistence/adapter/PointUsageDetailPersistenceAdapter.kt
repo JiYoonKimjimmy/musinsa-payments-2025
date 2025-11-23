@@ -1,6 +1,6 @@
 package com.musinsa.payments.point.infrastructure.persistence.adapter
 
-import com.musinsa.payments.point.application.port.out.persistence.PointUsageDetailPersistencePort
+import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
 import com.musinsa.payments.point.domain.entity.PointUsageDetail
 import com.musinsa.payments.point.infrastructure.persistence.jpa.mapper.PointEntityMapper
 import com.musinsa.payments.point.infrastructure.persistence.jpa.repository.PointUsageDetailJpaRepository

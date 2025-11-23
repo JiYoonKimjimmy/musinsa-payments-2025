@@ -1,4 +1,4 @@
-package com.musinsa.payments.point.application.port.out.config
+package com.musinsa.payments.point.application.port.output.config
 
 import com.musinsa.payments.point.domain.entity.PointConfig
 import java.util.*

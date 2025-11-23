@@ -1,4 +1,4 @@
-package com.musinsa.payments.point.application.port.out.persistence
+package com.musinsa.payments.point.application.port.output.persistence
 
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus

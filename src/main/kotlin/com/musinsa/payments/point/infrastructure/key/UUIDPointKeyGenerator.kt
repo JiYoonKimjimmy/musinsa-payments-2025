@@ -1,6 +1,6 @@
 package com.musinsa.payments.point.infrastructure.key
 
-import com.musinsa.payments.point.application.port.out.PointKeyGenerator
+import com.musinsa.payments.point.application.port.output.PointKeyGenerator
 import com.musinsa.payments.point.domain.valueobject.PointKey
 import org.springframework.stereotype.Component
 import java.util.*
