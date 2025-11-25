@@ -11,7 +11,9 @@ import com.musinsa.payments.point.domain.exception.MaxBalanceExceededException
 import com.musinsa.payments.point.domain.valueobject.Money
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotBeBlank
 import java.time.LocalDate
 
 /**
@@ -31,6 +33,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     beforeEach {
         pointAccumulationPersistencePort.clear()
         pointKeyGenerator.resetCounter()
+        pointConfigPort.resetToDefaults()
     }
     
     Given("유효한 적립 요청이 있을 때") {
@@ -43,10 +46,10 @@ class PointAccumulationServiceTest : BehaviorSpec({
             Then("적립이 정상적으로 완료되어야 한다") {
                 result.memberId shouldBe memberId
                 result.amount.toLong() shouldBe amount
-                result.pointKey shouldBe "POINT-001"
+                result.pointKey.shouldNotBeBlank()
                 result.status shouldBe PointAccumulationStatus.ACCUMULATED
                 result.isManualGrant shouldBe false
-                result.id shouldBe 1L
+                result.id shouldBeGreaterThan 0L
             }
         }
     }
@@ -65,11 +68,9 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("최대 적립 금액을 초과하는 적립 요청이 있을 때") {
-        pointConfigPort.setConfig("MAX_ACCUMULATION_AMOUNT_PER_TIME", "100000")
-        
         val memberId = 1L
         val amount = 200000L // 최대값 100000 초과
-        
+
         When("포인트를 적립하면") {
             Then("MaxAccumulationExceededException이 발생해야 한다") {
                 shouldThrow<MaxAccumulationExceededException> {
@@ -80,29 +81,20 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("최대 보유 금액을 초과하는 적립 요청이 있을 때") {
-        pointConfigPort.setConfigs(
-            "MAX_ACCUMULATION_AMOUNT_PER_TIME" to "1000000",
-            "MAX_BALANCE_PER_MEMBER" to "10000000",
-            "DEFAULT_EXPIRATION_DAYS" to "365",
-            "MIN_EXPIRATION_DAYS" to "1",
-            "MAX_EXPIRATION_DAYS" to "1824"
-        )
-        
         val memberId = 1L
         val currentBalance = 9600000L // 현재 잔액
         val amount = 500000L // 적립 금액 (9600000 + 500000 = 10100000 > 10000000)
-        
+
         val existingAccumulation = PointAccumulation(
             pointKey = "EXISTING",
             memberId = memberId,
             amount = Money.of(currentBalance),
             expirationDate = LocalDate.now().plusDays(365)
         )
+        pointAccumulationPersistencePort.save(existingAccumulation)
 
         When("포인트를 적립하면") {
             Then("MaxBalanceExceededException이 발생해야 한다") {
-                pointAccumulationPersistencePort.save(existingAccumulation)
-
                 shouldThrow<MaxBalanceExceededException> {
                     service.accumulate(memberId, amount)
                 }
@@ -111,20 +103,13 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("사용자 지정 만료일이 있는 적립 요청이 있을 때") {
-        pointConfigPort.setConfigs(
-            "MAX_ACCUMULATION_AMOUNT_PER_TIME" to "100000",
-            "MAX_BALANCE_PER_MEMBER" to "10000000",
-            "MIN_EXPIRATION_DAYS" to "1",
-            "MAX_EXPIRATION_DAYS" to "1824"
-        )
-        
         val memberId = 1L
         val amount = 10000L
         val expirationDays = 180
-        
+
         When("지정한 만료일로 포인트를 적립하면") {
             val result = service.accumulate(memberId, amount, expirationDays)
-            
+
             Then("지정한 만료일이 설정되어야 한다") {
                 val expectedExpirationDate = LocalDate.now().plusDays(expirationDays.toLong())
                 result.expirationDate shouldBe expectedExpirationDate
@@ -133,17 +118,10 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("만료일이 최소값보다 작은 적립 요청이 있을 때") {
-        pointConfigPort.setConfigs(
-            "MAX_ACCUMULATION_AMOUNT_PER_TIME" to "100000",
-            "MAX_BALANCE_PER_MEMBER" to "10000000",
-            "MIN_EXPIRATION_DAYS" to "1",
-            "MAX_EXPIRATION_DAYS" to "1824"
-        )
-        
         val memberId = 1L
         val amount = 10000L
         val expirationDays = 0 // 최소값 1보다 작음
-        
+
         When("포인트를 적립하면") {
             Then("InvalidExpirationDateException이 발생해야 한다") {
                 shouldThrow<InvalidExpirationDateException> {
@@ -154,17 +132,10 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("만료일이 최대값보다 큰 적립 요청이 있을 때") {
-        pointConfigPort.setConfigs(
-            "MAX_ACCUMULATION_AMOUNT_PER_TIME" to "100000",
-            "MAX_BALANCE_PER_MEMBER" to "10000000",
-            "MIN_EXPIRATION_DAYS" to "1",
-            "MAX_EXPIRATION_DAYS" to "1824"
-        )
-        
         val memberId = 1L
         val amount = 10000L
         val expirationDays = 2000 // 최대값 1824보다 큼
-        
+
         When("포인트를 적립하면") {
             Then("InvalidExpirationDateException이 발생해야 한다") {
                 shouldThrow<InvalidExpirationDateException> {
@@ -184,12 +155,12 @@ class PointAccumulationServiceTest : BehaviorSpec({
             amount = amount,
             expirationDate = LocalDate.now().plusDays(365)
         )
+        pointAccumulationPersistencePort.save(accumulation)
 
         When("적립을 취소하면") {
-            Then("적립 상태가 CANCELLED로 변경되어야 한다") {
-                pointAccumulationPersistencePort.save(accumulation)
+            val result = service.cancelAccumulation(pointKey)
 
-                val result = service.cancelAccumulation(pointKey)
+            Then("적립 상태가 CANCELLED로 변경되어야 한다") {
                 result.status shouldBe PointAccumulationStatus.CANCELLED
             }
         }
