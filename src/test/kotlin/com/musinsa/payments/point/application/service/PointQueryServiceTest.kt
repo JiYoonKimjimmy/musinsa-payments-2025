@@ -2,11 +2,15 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
+import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
 import com.musinsa.payments.point.domain.entity.fixtures.PointUsageFixture
+import com.musinsa.payments.point.domain.valueobject.Money
+import com.musinsa.payments.point.domain.valueobject.OrderNumber
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.data.domain.PageRequest
+import java.time.LocalDateTime
 
 /**
  * PointQueryService 단위 테스트
@@ -114,20 +118,23 @@ class PointQueryServiceTest : BehaviorSpec({
         val pageable = PageRequest.of(0, 10)
 
         When("사용 내역을 조회하면") {
-            // 데이터 준비: 사용 내역 2건
-            val usage1 = PointUsageFixture.create(
+            // 데이터 준비: 사용 내역 2건 (명시적으로 다른 createdAt 설정)
+            val baseTime = LocalDateTime.now()
+            val usage1 = PointUsage(
                 pointKey = "USAGE01",
                 memberId = memberId,
-                orderNumber = "ORDER123",
-                totalAmount = 5000L
+                orderNumber = OrderNumber.of("ORDER123"),
+                totalAmount = Money.of(5000L),
+                createdAt = baseTime.minusSeconds(1)
             )
             pointUsagePersistencePort.save(usage1)
 
-            val usage2 = PointUsageFixture.create(
+            val usage2 = PointUsage(
                 pointKey = "USAGE02",
                 memberId = memberId,
-                orderNumber = "ORDER456",
-                totalAmount = 3000L
+                orderNumber = OrderNumber.of("ORDER456"),
+                totalAmount = Money.of(3000L),
+                createdAt = baseTime
             )
             pointUsagePersistencePort.save(usage2)
 

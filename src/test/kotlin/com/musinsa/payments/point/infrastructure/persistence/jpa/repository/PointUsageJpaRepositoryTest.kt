@@ -76,10 +76,31 @@ class PointUsageJpaRepositoryTest @Autowired constructor(
     
     "회원 ID로 사용 내역을 페이징하여 조회할 수 있어야 한다" {
         // given
-        val entity1 = createPointUsageEntity(pointKey = "USAGE1", memberId = 1L, orderNumber = "ORDER1")
-        val entity2 = createPointUsageEntity(pointKey = "USAGE2", memberId = 1L, orderNumber = "ORDER2")
-        val entity3 = createPointUsageEntity(pointKey = "USAGE3", memberId = 1L, orderNumber = "ORDER3")
-        val entity4 = createPointUsageEntity(pointKey = "USAGE4", memberId = 2L, orderNumber = "ORDER4")
+        val baseTime = LocalDateTime.now()
+        val entity1 = createPointUsageEntity(
+            pointKey = "USAGE1", 
+            memberId = 1L, 
+            orderNumber = "ORDER1",
+            createdAt = baseTime.minusSeconds(2)
+        )
+        val entity2 = createPointUsageEntity(
+            pointKey = "USAGE2", 
+            memberId = 1L, 
+            orderNumber = "ORDER2",
+            createdAt = baseTime.minusSeconds(1)
+        )
+        val entity3 = createPointUsageEntity(
+            pointKey = "USAGE3", 
+            memberId = 1L, 
+            orderNumber = "ORDER3",
+            createdAt = baseTime
+        )
+        val entity4 = createPointUsageEntity(
+            pointKey = "USAGE4", 
+            memberId = 2L, 
+            orderNumber = "ORDER4",
+            createdAt = baseTime
+        )
         pointUsageJpaRepository.saveAll(listOf(entity1, entity2, entity3, entity4))
         
         val pageable = PageRequest.of(0, 2)
@@ -138,7 +159,8 @@ class PointUsageJpaRepositoryTest @Autowired constructor(
             orderNumber: String,
             totalAmount: BigDecimal = BigDecimal("1000"),
             cancelledAmount: BigDecimal = BigDecimal.ZERO,
-            status: PointUsageStatus = PointUsageStatus.USED
+            status: PointUsageStatus = PointUsageStatus.USED,
+            createdAt: LocalDateTime = LocalDateTime.now()
         ): PointUsageEntity {
             val entity = PointUsageEntity()
             entity.pointKey = pointKey
@@ -147,7 +169,7 @@ class PointUsageJpaRepositoryTest @Autowired constructor(
             entity.totalAmount = totalAmount
             entity.cancelledAmount = cancelledAmount
             entity.status = status
-            entity.createdAt = LocalDateTime.now()
+            entity.createdAt = createdAt
             entity.updatedAt = LocalDateTime.now()
             return entity
         }

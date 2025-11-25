@@ -52,7 +52,10 @@ class FakePointUsagePersistencePort : PointUsagePersistencePort {
         val filtered = storageById.values
             .filter { it.memberId == memberId }
             .filter { orderNumber == null || it.orderNumber.value == orderNumber }
-            .sortedWith(compareByDescending<PointUsage> { it.createdAt })
+            .sortedWith(
+                compareByDescending<PointUsage> { it.createdAt }
+                    .thenByDescending { it.id ?: 0L }
+            )
         
         val start = pageable.offset.toInt()
         val end = minOf(start + pageable.pageSize, filtered.size)

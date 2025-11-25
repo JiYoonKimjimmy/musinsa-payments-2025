@@ -33,7 +33,7 @@ interface PointUsageJpaRepository : JpaRepository<PointUsageEntity, Long> {
         SELECT pu FROM PointUsageEntity pu
         WHERE pu.memberId = :memberId
           AND (:orderNumber IS NULL OR pu.orderNumber = :orderNumber)
-        ORDER BY pu.createdAt DESC
+        ORDER BY pu.createdAt DESC, pu.id DESC
     """)
     fun findByMemberId(
         @Param("memberId") memberId: Long,
