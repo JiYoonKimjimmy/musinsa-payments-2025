@@ -28,7 +28,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
         pointKeyGenerator
     )
 
-    beforeSpec {
+    beforeEach {
         pointAccumulationPersistencePort.clear()
         pointKeyGenerator.resetCounter()
     }
@@ -99,10 +99,10 @@ class PointAccumulationServiceTest : BehaviorSpec({
             expirationDate = LocalDate.now().plusDays(365)
         )
 
-        pointAccumulationPersistencePort.save(existingAccumulation)
-
         When("포인트를 적립하면") {
             Then("MaxBalanceExceededException이 발생해야 한다") {
+                pointAccumulationPersistencePort.save(existingAccumulation)
+
                 shouldThrow<MaxBalanceExceededException> {
                     service.accumulate(memberId, amount)
                 }
@@ -184,11 +184,11 @@ class PointAccumulationServiceTest : BehaviorSpec({
             amount = amount,
             expirationDate = LocalDate.now().plusDays(365)
         )
-        
-        pointAccumulationPersistencePort.save(accumulation)
 
         When("적립을 취소하면") {
             Then("적립 상태가 CANCELLED로 변경되어야 한다") {
+                pointAccumulationPersistencePort.save(accumulation)
+
                 val result = service.cancelAccumulation(pointKey)
                 result.status shouldBe PointAccumulationStatus.CANCELLED
             }
