@@ -57,5 +57,21 @@ interface PointAccumulationPersistencePort {
      * @return 사용 가능 금액 합계
      */
     fun sumAvailableAmountByMemberId(memberId: Long): Money
+
+    /**
+     * ID로 조회 (비관적 락 적용)
+     * @param id 포인트 적립 ID
+     * @return 포인트 적립 엔티티 (없으면 empty)
+     */
+    fun findByIdWithLock(id: Long): Optional<PointAccumulation>
+
+    /**
+     * 회원 ID로 사용 가능한 적립 건 조회 (비관적 락 적용)
+     * 상태가 ACCUMULATED이고 사용 가능 잔액이 있고 만료되지 않은 적립 건만 조회
+     * 수기 지급 우선, 만료일 짧은 순으로 정렬
+     * @param memberId 회원 ID
+     * @return 포인트 적립 엔티티 목록
+     */
+    fun findAvailableAccumulationsByMemberIdWithLock(memberId: Long): List<PointAccumulation>
 }
 
