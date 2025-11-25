@@ -2,7 +2,6 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.input.PointAccumulationUseCase
 import com.musinsa.payments.point.application.port.output.PointKeyGenerator
-import com.musinsa.payments.point.application.port.output.config.PointConfigPort
 import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.exception.InvalidAmountException
@@ -22,7 +21,7 @@ import java.time.LocalDate
 @Service
 class PointAccumulationService(
     private val pointAccumulationPersistencePort: PointAccumulationPersistencePort,
-    private val pointConfigPort: PointConfigPort,
+    private val pointConfigService: PointConfigService,
     private val pointKeyGenerator: PointKeyGenerator
 ) : PointAccumulationUseCase {
     
@@ -134,18 +133,14 @@ class PointAccumulationService(
      * 설정 값을 Long 타입으로 조회
      */
     private fun getConfigLongValue(configKey: String): Long {
-        return pointConfigPort.findByConfigKey(configKey)
-            .orElseThrow { IllegalArgumentException("설정을 찾을 수 없습니다: $configKey") }
-            .getLongValue()
+        return pointConfigService.getLongValue(configKey)
     }
     
     /**
      * 설정 값을 Int 타입으로 조회
      */
     private fun getConfigIntValue(configKey: String): Int {
-        return pointConfigPort.findByConfigKey(configKey)
-            .orElseThrow { IllegalArgumentException("설정을 찾을 수 없습니다: $configKey") }
-            .getIntValue()
+        return pointConfigService.getIntValue(configKey)
     }
 }
 

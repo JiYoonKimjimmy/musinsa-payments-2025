@@ -48,6 +48,7 @@ class PointConfigService(
      * @return 설정 값 (Long)
      * @throws IllegalArgumentException 설정을 찾을 수 없거나 변환할 수 없는 경우
      */
+    @Cacheable(value = ["pointConfig"], key = "#configKey + ':long'")
     fun getLongValue(configKey: String): Long {
         return pointConfigPort.findByConfigKey(configKey)
             .orElseThrow { IllegalArgumentException("설정을 찾을 수 없습니다: $configKey") }
@@ -60,6 +61,7 @@ class PointConfigService(
      * @return 설정 값 (Int)
      * @throws IllegalArgumentException 설정을 찾을 수 없거나 변환할 수 없는 경우
      */
+    @Cacheable(value = ["pointConfig"], key = "#configKey + ':int'")
     fun getIntValue(configKey: String): Int {
         return pointConfigPort.findByConfigKey(configKey)
             .orElseThrow { IllegalArgumentException("설정을 찾을 수 없습니다: $configKey") }
@@ -72,6 +74,7 @@ class PointConfigService(
      * @return 설정 값 (Boolean)
      * @throws IllegalArgumentException 설정을 찾을 수 없는 경우
      */
+    @Cacheable(value = ["pointConfig"], key = "#configKey + ':boolean'")
     fun getBooleanValue(configKey: String): Boolean {
         return pointConfigPort.findByConfigKey(configKey)
             .orElseThrow { IllegalArgumentException("설정을 찾을 수 없습니다: $configKey") }
@@ -89,15 +92,15 @@ class PointConfigService(
      * @throws ConfigNotFoundException 설정을 찾을 수 없는 경우
      * @throws InvalidConfigValueException 설정 값이 유효하지 않은 경우
      */
-    @CacheEvict(value = ["pointConfig"], allEntries = true)
     @Transactional
+    @CacheEvict(value = ["pointConfig"], allEntries = true)
     fun updateConfig(
         configKey: String,
         configValue: String,
         description: String? = null,
         changedBy: String? = null
     ): PointConfig {
-        // 설정 조회
+        // 설정 조회 (업데이트 전 최신 값을 조회하기 위해 캐시를 우회하여 직접 조회)
         val config = pointConfigPort.findByConfigKey(configKey)
             .orElseThrow { ConfigNotFoundException("설정을 찾을 수 없습니다: $configKey") }
         

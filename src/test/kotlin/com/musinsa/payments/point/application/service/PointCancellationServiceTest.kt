@@ -1,5 +1,6 @@
 package com.musinsa.payments.point.application.service
 
+import com.musinsa.payments.point.application.port.output.config.fixtures.FakePointConfigHistoryPort
 import com.musinsa.payments.point.application.port.output.config.fixtures.FakePointConfigPort
 import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyGenerator
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
@@ -25,13 +26,16 @@ class PointCancellationServiceTest : BehaviorSpec({
     val pointAccumulationPersistencePort = FakePointAccumulationPersistencePort()
     val pointKeyGenerator = FakePointKeyGenerator()
     val pointConfigPort = FakePointConfigPort().apply { setupDefaultConfigs() }
+    val pointConfigValidator = PointConfigValidator(pointConfigPort)
+    val pointConfigHistoryPort = FakePointConfigHistoryPort()
+    val pointConfigService = PointConfigService(pointConfigPort, pointConfigValidator, pointConfigHistoryPort)
 
     val service = PointCancellationService(
         pointUsagePersistencePort,
         pointUsageDetailPersistencePort,
         pointAccumulationPersistencePort,
         pointKeyGenerator,
-        pointConfigPort
+        pointConfigService
     )
 
     beforeContainer {
@@ -40,6 +44,7 @@ class PointCancellationServiceTest : BehaviorSpec({
         pointAccumulationPersistencePort.clear()
         pointKeyGenerator.resetCounter()
         pointConfigPort.resetToDefaults()
+        pointConfigHistoryPort.clear()
     }
     
     Given("취소 가능한 포인트 사용 건이 있을 때") {

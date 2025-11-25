@@ -2,7 +2,6 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.input.PointCancellationUseCase
 import com.musinsa.payments.point.application.port.output.PointKeyGenerator
-import com.musinsa.payments.point.application.port.output.config.PointConfigPort
 import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
@@ -23,7 +22,7 @@ class PointCancellationService(
     private val pointUsageDetailPersistencePort: PointUsageDetailPersistencePort,
     private val pointAccumulationPersistencePort: PointAccumulationPersistencePort,
     private val pointKeyGenerator: PointKeyGenerator,
-    private val pointConfigPort: PointConfigPort
+    private val pointConfigService: PointConfigService
 ) : PointCancellationUseCase {
     
     companion object {
@@ -158,9 +157,7 @@ class PointCancellationService(
      * 설정 값을 Int 타입으로 조회
      */
     private fun getConfigIntValue(configKey: String): Int {
-        return pointConfigPort.findByConfigKey(configKey)
-            .orElseThrow { IllegalArgumentException("설정을 찾을 수 없습니다: $configKey") }
-            .getIntValue()
+        return pointConfigService.getIntValue(configKey)
     }
 }
 
