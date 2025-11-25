@@ -2,10 +2,9 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
-import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
+import com.musinsa.payments.point.domain.entity.fixtures.PointUsageFixture
 import com.musinsa.payments.point.domain.valueobject.Money
-import com.musinsa.payments.point.domain.valueobject.OrderNumber
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.data.domain.PageRequest
@@ -117,19 +116,19 @@ class PointQueryServiceTest : BehaviorSpec({
 
         When("사용 내역을 조회하면") {
             // 데이터 준비: 사용 내역 2건
-            val usage1 = PointUsage(
+            val usage1 = PointUsageFixture.create(
                 pointKey = "USAGE01",
                 memberId = memberId,
-                orderNumber = OrderNumber.of("ORDER123"),
-                totalAmount = Money.of(5000L)
+                orderNumber = "ORDER123",
+                totalAmount = 5000L
             )
             pointUsagePersistencePort.save(usage1)
 
-            val usage2 = PointUsage(
+            val usage2 = PointUsageFixture.create(
                 pointKey = "USAGE02",
                 memberId = memberId,
-                orderNumber = OrderNumber.of("ORDER456"),
-                totalAmount = Money.of(3000L)
+                orderNumber = "ORDER456",
+                totalAmount = 3000L
             )
             pointUsagePersistencePort.save(usage2)
 
@@ -152,11 +151,11 @@ class PointQueryServiceTest : BehaviorSpec({
 
         When("주문번호로 필터링하여 조회하면") {
             // 데이터 준비: 특정 주문번호의 사용 내역
-            val usage = PointUsage(
+            val usage = PointUsageFixture.create(
                 pointKey = "USAGE01",
                 memberId = memberId,
-                orderNumber = OrderNumber.of(orderNumber),
-                totalAmount = Money.of(5000L)
+                orderNumber = orderNumber,
+                totalAmount = 5000L
             )
             pointUsagePersistencePort.save(usage)
 
@@ -176,11 +175,11 @@ class PointQueryServiceTest : BehaviorSpec({
         When("페이징된 사용 내역을 조회하면") {
             // 데이터 준비: 총 15개의 사용 내역
             (1..15).forEach { i ->
-                val usage = PointUsage(
+                val usage = PointUsageFixture.create(
                     pointKey = "USAGE${String.format("%02d", i)}",
                     memberId = memberId,
-                    orderNumber = OrderNumber.of("ORDER$i"),
-                    totalAmount = Money.of(1000L * i)
+                    orderNumber = "ORDER$i",
+                    totalAmount = 1000L * i
                 )
                 pointUsagePersistencePort.save(usage)
             }
