@@ -1,39 +1,34 @@
 package com.musinsa.payments.point.application.service
 
-import com.musinsa.payments.point.application.port.output.PointKeyGenerator
-import com.musinsa.payments.point.application.port.output.config.PointConfigPort
-import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
-import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
-import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
+import com.musinsa.payments.point.application.port.output.config.fixtures.FakePointConfigPort
+import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyGenerator
+import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
+import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsageDetailPersistencePort
+import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
+import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.domain.entity.PointUsageDetail
 import com.musinsa.payments.point.domain.entity.PointUsageStatus
-import com.musinsa.payments.point.domain.entity.PointConfig
 import com.musinsa.payments.point.domain.exception.CannotCancelUsageException
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
-import com.musinsa.payments.point.domain.valueobject.PointKey
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
 import java.time.LocalDate
-import java.util.*
 
 /**
  * PointCancellationService 단위 테스트
  */
 class PointCancellationServiceTest : BehaviorSpec({
-    
-    val pointUsagePersistencePort = mockk<PointUsagePersistencePort>()
-    val pointUsageDetailPersistencePort = mockk<PointUsageDetailPersistencePort>()
-    val pointAccumulationPersistencePort = mockk<PointAccumulationPersistencePort>()
-    val pointKeyGenerator = mockk<PointKeyGenerator>()
-    val pointConfigPort = mockk<PointConfigPort>()
-    
+
+    val pointUsagePersistencePort = FakePointUsagePersistencePort()
+    val pointUsageDetailPersistencePort = FakePointUsageDetailPersistencePort(pointUsagePersistencePort)
+    val pointAccumulationPersistencePort = FakePointAccumulationPersistencePort()
+    val pointKeyGenerator = FakePointKeyGenerator()
+    val pointConfigPort = FakePointConfigPort().apply { setupDefaultConfigs() }
+
     val service = PointCancellationService(
         pointUsagePersistencePort,
         pointUsageDetailPersistencePort,
@@ -41,51 +36,72 @@ class PointCancellationServiceTest : BehaviorSpec({
         pointKeyGenerator,
         pointConfigPort
     )
+
+    beforeContainer {
+        pointUsagePersistencePort.clear()
+        pointUsageDetailPersistencePort.clear()
+        pointAccumulationPersistencePort.clear()
+        pointKeyGenerator.resetCounter()
+        pointConfigPort.resetToDefaults()
+    }
     
     Given("취소 가능한 포인트 사용 건이 있을 때") {
         val pointKey = "USAGE01"
         val memberId = 1L
         val orderNumber = "ORDER123"
         val totalAmount = Money.of(5000L)
-        
-        val usage = PointUsage(
-            pointKey = pointKey,
-            memberId = memberId,
-            orderNumber = OrderNumber.of(orderNumber),
-            totalAmount = totalAmount
-        )
-        usage.id = 1L
-        
-        val accumulation = PointAccumulation(
-            pointKey = "ACCUM01",
-            memberId = memberId,
-            amount = Money.of(10000L),
-            expirationDate = LocalDate.now().plusDays(365)
-        )
-        accumulation.id = 1L
-        accumulation.use(totalAmount) // 사용 처리
-        
-        val usageDetail = PointUsageDetail(
-            pointUsageId = 1L,
-            pointAccumulationId = 1L,
-            amount = totalAmount
-        )
-        
-        every { pointUsagePersistencePort.findByPointKey(pointKey) } returns Optional.of(usage)
-        every { pointUsageDetailPersistencePort.findByUsagePointKey(pointKey) } returns listOf(usageDetail)
-        every { pointAccumulationPersistencePort.findById(1L) } returns Optional.of(accumulation)
-        every { pointUsagePersistencePort.save(any()) } answers { firstArg() }
-        every { pointUsageDetailPersistencePort.saveAll(any()) } answers { firstArg() }
-        every { pointAccumulationPersistencePort.save(any()) } answers { firstArg() }
-        
+
         When("전체 취소하면") {
+            // 데이터 준비 - 적립 건 생성
+            val accumulation = PointAccumulation(
+                pointKey = "ACCUM01",
+                memberId = memberId,
+                amount = Money.of(10000L),
+                expirationDate = LocalDate.now().plusDays(365),
+                status = PointAccumulationStatus.ACCUMULATED
+            )
+            val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
+            val accumulationId = savedAccumulation.id
+                ?: throw IllegalStateException("적립 건 ID가 없습니다.")
+
+            // 적립 건 사용 처리
+            savedAccumulation.use(totalAmount)
+            pointAccumulationPersistencePort.save(savedAccumulation)
+
+            // 사용 건 생성
+            val usage = PointUsage(
+                pointKey = pointKey,
+                memberId = memberId,
+                orderNumber = OrderNumber.of(orderNumber),
+                totalAmount = totalAmount
+            )
+            val savedUsage = pointUsagePersistencePort.save(usage)
+            val usageId = savedUsage.id
+                ?: throw IllegalStateException("사용 건 ID가 없습니다.")
+
+            // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
+            val usageDetails = (1..totalAmount.toLong()).map {
+                PointUsageDetail(
+                    pointUsageId = usageId,
+                    pointAccumulationId = accumulationId,
+                    amount = Money.of(1L)
+                )
+            }
+            pointUsageDetailPersistencePort.saveAll(usageDetails)
+
+            // 취소 전 적립 건 상태 확인
+            val beforeCancel = pointAccumulationPersistencePort.findById(accumulationId).orElseThrow()
+            beforeCancel.availableAmount shouldBe Money.of(5000L) // 5000원 사용 후
+
             val result = service.cancelUsage(pointKey)
-            
+
             Then("사용 건이 FULLY_CANCELLED 상태로 변경되어야 한다") {
                 result.status shouldBe PointUsageStatus.FULLY_CANCELLED
                 result.cancelledAmount shouldBe totalAmount
-                verify { pointAccumulationPersistencePort.save(any()) }
-                verify { pointUsageDetailPersistencePort.saveAll(any()) }
+
+                // 적립 건이 복원되었는지 확인
+                val restoredAccumulation = pointAccumulationPersistencePort.findById(accumulationId).orElseThrow()
+                restoredAccumulation.availableAmount shouldBe Money.of(10000L) // 원래 금액으로 복원
             }
         }
     }
@@ -96,53 +112,61 @@ class PointCancellationServiceTest : BehaviorSpec({
         val orderNumber = "ORDER123"
         val totalAmount = Money.of(10000L)
         val cancelAmount = 3000L
-        
-        val usage = PointUsage(
-            pointKey = pointKey,
-            memberId = memberId,
-            orderNumber = OrderNumber.of(orderNumber),
-            totalAmount = totalAmount
-        )
-        usage.id = 1L
-        
-        val accumulation = PointAccumulation(
-            pointKey = "ACCUM01",
-            memberId = memberId,
-            amount = Money.of(20000L),
-            expirationDate = LocalDate.now().plusDays(365)
-        )
-        accumulation.id = 1L
-        accumulation.use(totalAmount) // 사용 처리
-        
-        val usageDetail = PointUsageDetail(
-            pointUsageId = 1L,
-            pointAccumulationId = 1L,
-            amount = totalAmount
-        )
-        
-        every { pointUsagePersistencePort.findByPointKey(pointKey) } returns Optional.of(usage)
-        every { pointUsageDetailPersistencePort.findByUsagePointKey(pointKey) } returns listOf(usageDetail)
-        every { pointAccumulationPersistencePort.findById(1L) } returns Optional.of(accumulation)
-        every { pointUsagePersistencePort.save(any()) } answers { firstArg() }
-        every { pointUsageDetailPersistencePort.saveAll(any()) } answers { firstArg() }
-        every { pointAccumulationPersistencePort.save(any()) } answers { firstArg() }
-        
+
         When("부분 취소하면") {
+            // 데이터 준비 - 적립 건 생성
+            val accumulation = PointAccumulation(
+                pointKey = "ACCUM01",
+                memberId = memberId,
+                amount = Money.of(20000L),
+                expirationDate = LocalDate.now().plusDays(365),
+                status = PointAccumulationStatus.ACCUMULATED
+            )
+            val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
+            val accumulationId = savedAccumulation.id
+                ?: throw IllegalStateException("적립 건 ID가 없습니다.")
+
+            // 적립 건 사용 처리
+            savedAccumulation.use(totalAmount)
+            pointAccumulationPersistencePort.save(savedAccumulation)
+
+            // 사용 건 생성
+            val usage = PointUsage(
+                pointKey = pointKey,
+                memberId = memberId,
+                orderNumber = OrderNumber.of(orderNumber),
+                totalAmount = totalAmount
+            )
+            val savedUsage = pointUsagePersistencePort.save(usage)
+            val usageId = savedUsage.id
+                ?: throw IllegalStateException("사용 건 ID가 없습니다.")
+
+            // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
+            val usageDetails = (1..totalAmount.toLong()).map {
+                PointUsageDetail(
+                    pointUsageId = usageId,
+                    pointAccumulationId = accumulationId,
+                    amount = Money.of(1L)
+                )
+            }
+            pointUsageDetailPersistencePort.saveAll(usageDetails)
+
             val result = service.cancelUsage(pointKey, cancelAmount)
-            
+
             Then("사용 건이 PARTIALLY_CANCELLED 상태로 변경되어야 한다") {
                 result.status shouldBe PointUsageStatus.PARTIALLY_CANCELLED
                 result.cancelledAmount.toLong() shouldBe cancelAmount
-                verify { pointAccumulationPersistencePort.save(any()) }
+
+                // 적립 건이 부분 복원되었는지 확인
+                val restoredAccumulation = pointAccumulationPersistencePort.findById(accumulationId).orElseThrow()
+                restoredAccumulation.availableAmount shouldBe Money.of(10000L + cancelAmount) // 20000 - 10000 + 3000
             }
         }
     }
     
     Given("존재하지 않는 사용 건 키가 있을 때") {
         val pointKey = "NOTFOUND"
-        
-        every { pointUsagePersistencePort.findByPointKey(pointKey) } returns Optional.empty()
-        
+
         When("취소하면") {
             Then("IllegalArgumentException이 발생해야 한다") {
                 shouldThrow<IllegalArgumentException> {
@@ -158,18 +182,17 @@ class PointCancellationServiceTest : BehaviorSpec({
         val orderNumber = "ORDER123"
         val totalAmount = Money.of(5000L)
         val cancelAmount = 10000L // 총액보다 큰 금액
-        
-        val usage = PointUsage(
-            pointKey = pointKey,
-            memberId = memberId,
-            orderNumber = OrderNumber.of(orderNumber),
-            totalAmount = totalAmount
-        )
-        usage.id = 1L
-        
-        every { pointUsagePersistencePort.findByPointKey(pointKey) } returns Optional.of(usage)
-        
+
         When("취소하면") {
+            // 데이터 준비 - 사용 건만 생성 (적립 건은 필요 없음)
+            val usage = PointUsage(
+                pointKey = pointKey,
+                memberId = memberId,
+                orderNumber = OrderNumber.of(orderNumber),
+                totalAmount = totalAmount
+            )
+            pointUsagePersistencePort.save(usage)
+
             Then("CannotCancelUsageException이 발생해야 한다") {
                 shouldThrow<CannotCancelUsageException> {
                     service.cancelUsage(pointKey, cancelAmount)
@@ -183,50 +206,58 @@ class PointCancellationServiceTest : BehaviorSpec({
         val memberId = 1L
         val orderNumber = "ORDER123"
         val totalAmount = Money.of(5000L)
-        val newPointKey = PointKey.of("NEWACCUM")
-        
-        val usage = PointUsage(
-            pointKey = pointKey,
-            memberId = memberId,
-            orderNumber = OrderNumber.of(orderNumber),
-            totalAmount = totalAmount
-        )
-        usage.id = 1L
-        
-        // 만료된 적립 건 (생성자는 만료일 검증을 하므로, 일단 유효한 날짜로 생성 후 변경)
-        val expiredAccumulation = PointAccumulation(
-            pointKey = "EXPIRED01",
-            memberId = memberId,
-            amount = Money.of(10000L),
-            expirationDate = LocalDate.now().plusDays(1) // 일단 유효한 날짜로 생성
-        )
-        expiredAccumulation.id = 1L
-        expiredAccumulation.expirationDate = LocalDate.now().minusDays(1) // 만료일을 과거로 변경
-        expiredAccumulation.use(totalAmount) // 사용 처리
-        
-        val usageDetail = PointUsageDetail(
-            pointUsageId = 1L,
-            pointAccumulationId = 1L,
-            amount = totalAmount
-        )
-        
-        every { pointUsagePersistencePort.findByPointKey(pointKey) } returns Optional.of(usage)
-        every { pointUsageDetailPersistencePort.findByUsagePointKey(pointKey) } returns listOf(usageDetail)
-        every { pointAccumulationPersistencePort.findById(1L) } returns Optional.of(expiredAccumulation)
-        every { pointConfigPort.findByConfigKey("DEFAULT_EXPIRATION_DAYS") } returns Optional.of(
-            PointConfig("DEFAULT_EXPIRATION_DAYS", "365")
-        )
-        every { pointKeyGenerator.generate() } returns newPointKey
-        every { pointUsagePersistencePort.save(any()) } answers { firstArg() }
-        every { pointUsageDetailPersistencePort.saveAll(any()) } answers { firstArg() }
-        every { pointAccumulationPersistencePort.save(any()) } answers { firstArg() }
-        
+
         When("취소하면") {
+            // 데이터 준비 - 만료된 적립 건 생성 (생성자는 만료일 검증을 하므로, 일단 유효한 날짜로 생성 후 변경)
+            val expiredAccumulation = PointAccumulation(
+                pointKey = "EXPIRED01",
+                memberId = memberId,
+                amount = Money.of(10000L),
+                expirationDate = LocalDate.now().plusDays(1), // 일단 유효한 날짜로 생성
+                status = PointAccumulationStatus.ACCUMULATED
+            )
+            val savedExpiredAccumulation = pointAccumulationPersistencePort.save(expiredAccumulation)
+            val expiredAccumulationId = savedExpiredAccumulation.id
+                ?: throw IllegalStateException("적립 건 ID가 없습니다.")
+
+            // 만료일을 과거로 변경 (반사를 사용해 직접 변경)
+            savedExpiredAccumulation.expirationDate = LocalDate.now().minusDays(1)
+            savedExpiredAccumulation.use(totalAmount) // 사용 처리
+            pointAccumulationPersistencePort.save(savedExpiredAccumulation)
+
+            // 사용 건 생성
+            val usage = PointUsage(
+                pointKey = pointKey,
+                memberId = memberId,
+                orderNumber = OrderNumber.of(orderNumber),
+                totalAmount = totalAmount
+            )
+            val savedUsage = pointUsagePersistencePort.save(usage)
+            val usageId = savedUsage.id
+                ?: throw IllegalStateException("사용 건 ID가 없습니다.")
+
+            // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
+            val usageDetails = (1..totalAmount.toLong()).map {
+                PointUsageDetail(
+                    pointUsageId = usageId,
+                    pointAccumulationId = expiredAccumulationId,
+                    amount = Money.of(1L)
+                )
+            }
+            pointUsageDetailPersistencePort.saveAll(usageDetails)
+
             val result = service.cancelUsage(pointKey)
-            
+
             Then("만료된 포인트는 신규 적립으로 처리되어야 한다") {
                 result.status shouldBe PointUsageStatus.FULLY_CANCELLED
-                verify { pointAccumulationPersistencePort.save(any()) }
+
+                // 신규 적립 건이 생성되었는지 확인
+                val allAccumulations = pointAccumulationPersistencePort.findAll()
+                val newAccumulations = allAccumulations.filter {
+                    it.id != expiredAccumulationId && it.memberId == memberId
+                }
+                newAccumulations.size shouldBe 1
+                newAccumulations.first().amount shouldBe totalAmount
             }
         }
     }
@@ -236,43 +267,51 @@ class PointCancellationServiceTest : BehaviorSpec({
         val memberId = 1L
         val orderNumber = "ORDER123"
         val totalAmount = Money.of(5000L)
-        
-        val usage = PointUsage(
-            pointKey = pointKey,
-            memberId = memberId,
-            orderNumber = OrderNumber.of(orderNumber),
-            totalAmount = totalAmount
-        )
-        usage.id = 1L
-        
-        // 만료되지 않은 적립 건
-        val accumulation = PointAccumulation(
-            pointKey = "ACCUM01",
-            memberId = memberId,
-            amount = Money.of(10000L),
-            expirationDate = LocalDate.now().plusDays(365)
-        )
-        accumulation.id = 1L
-        accumulation.use(totalAmount) // 사용 처리
-        
-        val usageDetail = PointUsageDetail(
-            pointUsageId = 1L,
-            pointAccumulationId = 1L,
-            amount = totalAmount
-        )
-        
-        every { pointUsagePersistencePort.findByPointKey(pointKey) } returns Optional.of(usage)
-        every { pointUsageDetailPersistencePort.findByUsagePointKey(pointKey) } returns listOf(usageDetail)
-        every { pointAccumulationPersistencePort.findById(1L) } returns Optional.of(accumulation)
-        every { pointUsagePersistencePort.save(any()) } answers { firstArg() }
-        every { pointUsageDetailPersistencePort.saveAll(any()) } answers { firstArg() }
-        every { pointAccumulationPersistencePort.save(any()) } answers { firstArg() }
-        
+
         When("취소하면") {
+            // 데이터 준비 - 적립 건 생성
+            val accumulation = PointAccumulation(
+                pointKey = "ACCUM01",
+                memberId = memberId,
+                amount = Money.of(10000L),
+                expirationDate = LocalDate.now().plusDays(365),
+                status = PointAccumulationStatus.ACCUMULATED
+            )
+            val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
+            val accumulationId = savedAccumulation.id
+                ?: throw IllegalStateException("적립 건 ID가 없습니다.")
+
+            // 적립 건 사용 처리
+            savedAccumulation.use(totalAmount)
+            pointAccumulationPersistencePort.save(savedAccumulation)
+
+            // 사용 건 생성
+            val usage = PointUsage(
+                pointKey = pointKey,
+                memberId = memberId,
+                orderNumber = OrderNumber.of(orderNumber),
+                totalAmount = totalAmount
+            )
+            val savedUsage = pointUsagePersistencePort.save(usage)
+            val usageId = savedUsage.id
+                ?: throw IllegalStateException("사용 건 ID가 없습니다.")
+
+            // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
+            val usageDetails = (1..totalAmount.toLong()).map {
+                PointUsageDetail(
+                    pointUsageId = usageId,
+                    pointAccumulationId = accumulationId,
+                    amount = Money.of(1L)
+                )
+            }
+            pointUsageDetailPersistencePort.saveAll(usageDetails)
+
             service.cancelUsage(pointKey)
-            
+
             Then("기존 적립 건이 복원되어야 한다") {
-                verify { pointAccumulationPersistencePort.save(any()) }
+                // 적립 건이 원래 금액으로 복원되었는지 확인
+                val restoredAccumulation = pointAccumulationPersistencePort.findById(accumulationId).orElseThrow()
+                restoredAccumulation.availableAmount shouldBe Money.of(10000L) // 원래 금액으로 복원
             }
         }
     }

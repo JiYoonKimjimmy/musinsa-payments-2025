@@ -8,8 +8,10 @@ import java.util.concurrent.atomic.AtomicLong
  * 포인트 사용 상세 영속성 포트의 Fake 구현체
  * 메모리 기반 저장소를 사용하여 테스트에 활용합니다.
  */
-class FakePointUsageDetailPersistencePort : PointUsageDetailPersistencePort {
-    
+class FakePointUsageDetailPersistencePort(
+    private val usagePersistencePort: FakePointUsagePersistencePort? = null
+) : PointUsageDetailPersistencePort {
+
     private val idGenerator = AtomicLong(1L)
     private val storageById = mutableMapOf<Long, PointUsageDetail>()
     private val storageByUsagePointKey = mutableMapOf<String, MutableList<PointUsageDetail>>()
@@ -21,21 +23,33 @@ class FakePointUsageDetailPersistencePort : PointUsageDetailPersistencePort {
             if (detail.id == null) {
                 detail.id = idGenerator.getAndIncrement()
             }
-            
+
             // 저장
             storageById[detail.id!!] = detail
-            
-            // 인덱스 업데이트는 테스트에서 사용하지 않으므로 간단하게 구현
-            // 실제로는 usagePointKey와 accumulationPointKey를 통해 조회해야 하지만,
-            // 테스트에서는 주로 saveAll만 사용하므로 여기서는 생략
-            
+
             detail
         }
     }
-    
+
     override fun findByUsagePointKey(pointKey: String): List<PointUsageDetail> {
-        // 테스트에서 사용하지 않으므로 간단하게 구현
+        // usagePersistencePort를 통해 usage를 찾고, 해당 usageId로 필터링
+        if (usagePersistencePort != null) {
+            val usage = usagePersistencePort.findByPointKey(pointKey).orElse(null)
+            if (usage != null && usage.id != null) {
+                return storageById.values.filter { it.pointUsageId == usage.id }
+            }
+        }
+
+        // usagePersistencePort가 없으면 인덱스 사용
         return storageByUsagePointKey[pointKey] ?: emptyList()
+    }
+
+    /**
+     * 테스트 헬퍼: Usage PointKey와 상세 내역을 매핑
+     * saveAll 후에 호출하여 인덱스를 업데이트해야 함
+     */
+    fun indexByUsagePointKey(pointKey: String, details: List<PointUsageDetail>) {
+        storageByUsagePointKey[pointKey] = details.toMutableList()
     }
     
     override fun findByAccumulationPointKey(pointKey: String): List<PointUsageDetail> {
