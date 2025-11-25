@@ -24,7 +24,7 @@ class GlobalExceptionHandlerTest : BehaviorSpec({
                 val body = response.body!!
                 body.success shouldBe false
                 body.error!!.code shouldBe "INSUFFICIENT_POINT"
-                body.error!!.message.shouldNotBeNull()
+                body.error.message.shouldNotBeNull()
             }
         }
         
@@ -37,7 +37,7 @@ class GlobalExceptionHandlerTest : BehaviorSpec({
                 val body = response.body!!
                 body.success shouldBe false
                 body.error!!.code shouldBe "INVALID_AMOUNT"
-                body.error!!.message shouldBe "적립 금액은 0보다 커야 합니다."
+                body.error.message shouldBe "적립 금액은 0보다 커야 합니다."
             }
         }
         
@@ -194,7 +194,7 @@ class GlobalExceptionHandlerTest : BehaviorSpec({
                 val body = response.body!!
                 body.success shouldBe false
                 body.error!!.code shouldBe "INTERNAL_SERVER_ERROR"
-                body.error!!.message shouldContain "예상치 못한 오류"
+                body.error.message shouldContain "예상치 못한 오류"
             }
         }
     }

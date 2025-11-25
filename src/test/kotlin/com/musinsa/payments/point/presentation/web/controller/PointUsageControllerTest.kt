@@ -105,7 +105,7 @@ class PointUsageControllerTest : BehaviorSpec({
                 val responseBody = if (result.response.contentAsString.isNotEmpty()) {
                     try {
                         objectMapper.readTree(result.response.contentAsString)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         null
                     }
                 } else {

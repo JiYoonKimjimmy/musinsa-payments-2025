@@ -142,7 +142,7 @@ class PointConfigAdapterTest @Autowired constructor(
             configKey = "LONG_VALUE",
             configValue = "100000"
         )
-        val saved = adapter.save(config)
+        adapter.save(config)
         
         // when
         val found = adapter.findByConfigKey("LONG_VALUE")

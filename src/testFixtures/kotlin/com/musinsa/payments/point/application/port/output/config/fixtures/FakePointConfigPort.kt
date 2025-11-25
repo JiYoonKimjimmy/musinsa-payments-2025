@@ -66,15 +66,6 @@ class FakePointConfigPort : PointConfigPort {
     }
     
     /**
-     * 테스트 헬퍼: 여러 설정값을 한 번에 설정
-     */
-    fun setConfigs(vararg configs: Pair<String, String>) {
-        configs.forEach { (key, value) ->
-            setConfig(key, value)
-        }
-    }
-    
-    /**
      * 테스트 헬퍼: 기본 설정으로 리셋
      */
     fun resetToDefaults() {
