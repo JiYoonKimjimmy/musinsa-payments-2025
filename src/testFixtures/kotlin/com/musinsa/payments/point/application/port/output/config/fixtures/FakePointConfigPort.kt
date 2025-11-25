@@ -54,18 +54,6 @@ class FakePointConfigPort : PointConfigPort {
     }
     
     /**
-     * 테스트 헬퍼: 설정값 설정
-     */
-    fun setConfig(configKey: String, configValue: String) {
-        val existing = storage[configKey]
-        if (existing != null) {
-            existing.updateConfigValue(configValue)
-        } else {
-            save(PointConfig(configKey, configValue))
-        }
-    }
-    
-    /**
      * 테스트 헬퍼: 기본 설정으로 리셋
      */
     fun resetToDefaults() {
