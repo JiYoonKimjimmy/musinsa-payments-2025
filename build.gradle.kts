@@ -27,11 +27,15 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     
     // SpringDoc OpenAPI 3 (Swagger)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    
+    // Cache
+    implementation("com.github.ben-manes.caffeine:caffeine")
     
     // Database
     runtimeOnly("com.h2database:h2")
