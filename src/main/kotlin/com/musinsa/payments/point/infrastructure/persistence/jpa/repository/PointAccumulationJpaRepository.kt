@@ -2,7 +2,9 @@ package com.musinsa.payments.point.infrastructure.persistence.jpa.repository
 
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointAccumulationEntity
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -50,5 +52,32 @@ interface PointAccumulationJpaRepository : JpaRepository<PointAccumulationEntity
           AND pa.expirationDate >= CURRENT_DATE
     """)
     fun sumAvailableAmountByMemberId(@Param("memberId") memberId: Long): BigDecimal
+
+    /**
+     * ID로 조회 (비관적 쓰기 락)
+     * SELECT ... FOR UPDATE
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT pa FROM PointAccumulationEntity pa WHERE pa.id = :id")
+    fun findByIdWithLock(@Param("id") id: Long): Optional<PointAccumulationEntity>
+
+    /**
+     * 회원 ID로 사용 가능한 적립 건 조회 (비관적 쓰기 락)
+     * 상태가 ACCUMULATED이고 사용 가능 잔액이 0보다 큰 적립 건만 조회
+     * 수기 지급 우선, 만료일 짧은 순으로 정렬
+     * SELECT ... FOR UPDATE
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT pa FROM PointAccumulationEntity pa
+        WHERE pa.memberId = :memberId
+          AND pa.status = 'ACCUMULATED'
+          AND pa.availableAmount > 0
+          AND pa.expirationDate >= CURRENT_DATE
+        ORDER BY pa.isManualGrant DESC, pa.expirationDate ASC
+    """)
+    fun findAvailableAccumulationsByMemberIdWithLock(
+        @Param("memberId") memberId: Long
+    ): List<PointAccumulationEntity>
 }
 

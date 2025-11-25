@@ -52,5 +52,15 @@ class PointAccumulationPersistenceAdapter(
         val sum = pointAccumulationJpaRepository.sumAvailableAmountByMemberId(memberId)
         return Money.of(sum)
     }
+
+    override fun findByIdWithLock(id: Long): Optional<PointAccumulation> {
+        return pointAccumulationJpaRepository.findByIdWithLock(id)
+            .map { pointEntityMapper.toDomain(it) }
+    }
+
+    override fun findAvailableAccumulationsByMemberIdWithLock(memberId: Long): List<PointAccumulation> {
+        val entities = pointAccumulationJpaRepository.findAvailableAccumulationsByMemberIdWithLock(memberId)
+        return pointEntityMapper.toAccumulationDomainList(entities)
+    }
 }
 
