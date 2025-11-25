@@ -5,9 +5,9 @@ import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyG
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
-import com.musinsa.payments.point.domain.entity.PointUsageDetail
 import com.musinsa.payments.point.domain.entity.PointUsageStatus
 import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
+import com.musinsa.payments.point.domain.entity.fixtures.PointUsageDetailFixture
 import com.musinsa.payments.point.domain.entity.fixtures.PointUsageFixture
 import com.musinsa.payments.point.domain.exception.CannotCancelUsageException
 import com.musinsa.payments.point.domain.valueobject.Money
@@ -75,13 +75,11 @@ class PointCancellationServiceTest : BehaviorSpec({
                 ?: throw IllegalStateException("사용 건 ID가 없습니다.")
 
             // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
-            val usageDetails = (1..totalAmount.toLong()).map {
-                PointUsageDetail(
-                    pointUsageId = usageId,
-                    pointAccumulationId = accumulationId,
-                    amount = Money.of(1L)
-                )
-            }
+            val usageDetails = PointUsageDetailFixture.createMultipleOneWon(
+                pointUsageId = usageId,
+                pointAccumulationId = accumulationId,
+                count = totalAmount.toLong()
+            )
             pointUsageDetailPersistencePort.saveAll(usageDetails)
 
             // 취소 전 적립 건 상태 확인
@@ -135,13 +133,11 @@ class PointCancellationServiceTest : BehaviorSpec({
                 ?: throw IllegalStateException("사용 건 ID가 없습니다.")
 
             // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
-            val usageDetails = (1..totalAmount.toLong()).map {
-                PointUsageDetail(
-                    pointUsageId = usageId,
-                    pointAccumulationId = accumulationId,
-                    amount = Money.of(1L)
-                )
-            }
+            val usageDetails = PointUsageDetailFixture.createMultipleOneWon(
+                pointUsageId = usageId,
+                pointAccumulationId = accumulationId,
+                count = totalAmount.toLong()
+            )
             pointUsageDetailPersistencePort.saveAll(usageDetails)
 
             val result = service.cancelUsage(pointKey, cancelAmount)
@@ -229,13 +225,11 @@ class PointCancellationServiceTest : BehaviorSpec({
                 ?: throw IllegalStateException("사용 건 ID가 없습니다.")
 
             // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
-            val usageDetails = (1..totalAmount.toLong()).map {
-                PointUsageDetail(
-                    pointUsageId = usageId,
-                    pointAccumulationId = expiredAccumulationId,
-                    amount = Money.of(1L)
-                )
-            }
+            val usageDetails = PointUsageDetailFixture.createMultipleOneWon(
+                pointUsageId = usageId,
+                pointAccumulationId = expiredAccumulationId,
+                count = totalAmount.toLong()
+            )
             pointUsageDetailPersistencePort.saveAll(usageDetails)
 
             val result = service.cancelUsage(pointKey)
@@ -287,13 +281,11 @@ class PointCancellationServiceTest : BehaviorSpec({
                 ?: throw IllegalStateException("사용 건 ID가 없습니다.")
 
             // 사용 상세 내역 생성 (1원 단위로 totalAmount 만큼 생성)
-            val usageDetails = (1..totalAmount.toLong()).map {
-                PointUsageDetail(
-                    pointUsageId = usageId,
-                    pointAccumulationId = accumulationId,
-                    amount = Money.of(1L)
-                )
-            }
+            val usageDetails = PointUsageDetailFixture.createMultipleOneWon(
+                pointUsageId = usageId,
+                pointAccumulationId = accumulationId,
+                count = totalAmount.toLong()
+            )
             pointUsageDetailPersistencePort.saveAll(usageDetails)
 
             service.cancelUsage(pointKey)
