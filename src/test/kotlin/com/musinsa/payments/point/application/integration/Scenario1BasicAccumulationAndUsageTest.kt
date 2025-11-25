@@ -4,7 +4,6 @@ import com.musinsa.payments.point.application.port.input.PointAccumulationUseCas
 import com.musinsa.payments.point.application.port.input.PointQueryUseCase
 import com.musinsa.payments.point.application.port.input.PointUsageUseCase
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
-import com.musinsa.payments.point.domain.valueobject.Money
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.extensions.spring.SpringExtension
 import io.kotest.matchers.collections.shouldHaveSize

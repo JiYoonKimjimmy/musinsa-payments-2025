@@ -1,17 +1,9 @@
 package com.musinsa.payments.point.infrastructure.persistence.jpa.mapper
 
-import com.musinsa.payments.point.domain.entity.PointAccumulation
-import com.musinsa.payments.point.domain.entity.PointConfig
-import com.musinsa.payments.point.domain.entity.PointConfigHistory
-import com.musinsa.payments.point.domain.entity.PointUsage
-import com.musinsa.payments.point.domain.entity.PointUsageDetail
+import com.musinsa.payments.point.domain.entity.*
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
-import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointAccumulationEntity
-import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointConfigEntity
-import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointConfigHistoryEntity
-import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointUsageDetailEntity
-import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointUsageEntity
+import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.*
 import org.springframework.stereotype.Component
 
 /**

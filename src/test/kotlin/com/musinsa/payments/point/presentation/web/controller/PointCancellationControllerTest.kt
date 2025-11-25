@@ -3,11 +3,11 @@ package com.musinsa.payments.point.presentation.web.controller
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.musinsa.payments.point.application.port.input.PointCancellationUseCase
 import com.musinsa.payments.point.domain.entity.PointUsage
-import com.musinsa.payments.point.presentation.web.exception.GlobalExceptionHandler
 import com.musinsa.payments.point.domain.entity.PointUsageStatus
 import com.musinsa.payments.point.domain.exception.CannotCancelUsageException
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
+import com.musinsa.payments.point.presentation.web.exception.GlobalExceptionHandler
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -17,7 +17,8 @@ import io.mockk.verify
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.time.LocalDateTime
 

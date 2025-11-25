@@ -2,7 +2,6 @@ package com.musinsa.payments.point.application.port.output.config.fixtures
 
 import com.musinsa.payments.point.application.port.output.config.PointConfigPort
 import com.musinsa.payments.point.domain.entity.PointConfig
-import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 
 /**

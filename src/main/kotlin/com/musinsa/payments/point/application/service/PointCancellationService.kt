@@ -7,8 +7,6 @@ import com.musinsa.payments.point.application.port.output.persistence.PointAccum
 import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
-import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
-import com.musinsa.payments.point.domain.entity.PointUsageDetail
 import com.musinsa.payments.point.domain.valueobject.Money
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

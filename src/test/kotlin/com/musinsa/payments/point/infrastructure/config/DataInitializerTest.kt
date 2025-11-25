@@ -1,6 +1,5 @@
 package com.musinsa.payments.point.infrastructure.config
 
-import com.musinsa.payments.point.domain.entity.PointConfig
 import com.musinsa.payments.point.infrastructure.persistence.jpa.mapper.PointEntityMapper
 import com.musinsa.payments.point.infrastructure.persistence.jpa.repository.PointConfigJpaRepository
 import io.kotest.core.spec.style.StringSpec

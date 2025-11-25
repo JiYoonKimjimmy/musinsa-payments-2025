@@ -1,7 +1,6 @@
 package com.musinsa.payments.point.application.port.input
 
 import com.musinsa.payments.point.domain.entity.PointAccumulation
-import java.time.LocalDate
 
 /**
  * 포인트 적립 Use Case 인터페이스

@@ -5,7 +5,6 @@ import com.musinsa.payments.point.application.port.input.PointCancellationUseCas
 import com.musinsa.payments.point.application.port.input.PointQueryUseCase
 import com.musinsa.payments.point.application.port.input.PointUsageUseCase
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
-import com.musinsa.payments.point.infrastructure.persistence.jpa.entity.PointAccumulationEntity
 import com.musinsa.payments.point.infrastructure.persistence.jpa.mapper.PointEntityMapper
 import com.musinsa.payments.point.infrastructure.persistence.jpa.repository.PointAccumulationJpaRepository
 import io.kotest.core.spec.style.StringSpec

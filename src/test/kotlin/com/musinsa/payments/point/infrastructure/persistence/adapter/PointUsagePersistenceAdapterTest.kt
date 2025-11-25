@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDateTime
-import java.util.*
 
 /**
  * PointUsagePersistenceAdapter 통합 테스트

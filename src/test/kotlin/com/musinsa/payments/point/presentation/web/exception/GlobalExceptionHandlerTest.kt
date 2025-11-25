@@ -1,17 +1,11 @@
 package com.musinsa.payments.point.presentation.web.exception
 
 import com.musinsa.payments.point.domain.exception.*
-import com.musinsa.payments.point.presentation.web.dto.response.BaseResponse
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.mockk.every
-import io.mockk.mockk
 import org.springframework.http.HttpStatus
-import org.springframework.validation.BindingResult
-import org.springframework.validation.FieldError
-import org.springframework.web.bind.MethodArgumentNotValidException
 
 /**
  * GlobalExceptionHandler 예외 처리 테스트

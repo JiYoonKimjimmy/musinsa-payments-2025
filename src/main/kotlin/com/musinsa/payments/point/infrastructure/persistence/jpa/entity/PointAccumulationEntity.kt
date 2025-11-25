@@ -1,6 +1,5 @@
 package com.musinsa.payments.point.infrastructure.persistence.jpa.entity
 
-import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import jakarta.persistence.*
 import java.math.BigDecimal

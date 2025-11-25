@@ -1,10 +1,9 @@
 package com.musinsa.payments.point.application.service
 
-import com.musinsa.payments.point.application.port.input.PointQueryUseCase
 import com.musinsa.payments.point.application.port.input.PointBalanceResult
+import com.musinsa.payments.point.application.port.input.PointQueryUseCase
 import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
-import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

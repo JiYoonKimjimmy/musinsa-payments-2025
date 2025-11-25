@@ -4,7 +4,6 @@ import com.musinsa.payments.point.application.port.output.persistence.fixtures.F
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
 import com.musinsa.payments.point.domain.entity.fixtures.PointUsageFixture
-import com.musinsa.payments.point.domain.valueobject.Money
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.data.domain.PageRequest
