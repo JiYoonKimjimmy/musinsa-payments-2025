@@ -4,6 +4,7 @@ plugins {
     kotlin("plugin.jpa") version "1.9.25"
     id("org.springframework.boot") version "3.5.7"
     id("io.spring.dependency-management") version "1.1.7"
+    `java-test-fixtures`
     jacoco
 }
 
@@ -42,7 +43,13 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core:5.8.0")
     testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.3")
     testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation(testFixtures(project))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+// testFixtures 의존성 설정
+dependencies {
+    testFixturesImplementation("org.jetbrains.kotlin:kotlin-reflect")
 }
 
 kotlin {
