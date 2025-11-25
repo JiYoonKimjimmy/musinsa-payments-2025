@@ -8,6 +8,7 @@ import com.musinsa.payments.point.application.port.output.persistence.PointUsage
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.valueobject.Money
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
@@ -15,7 +16,7 @@ import java.time.LocalDate
  * 포인트 사용 취소 서비스
  * PointCancellationUseCase 인터페이스를 구현합니다.
  */
-@Transactional
+@Transactional(isolation = Isolation.READ_COMMITTED)
 @Service
 class PointCancellationService(
     private val pointUsagePersistencePort: PointUsagePersistencePort,
@@ -105,9 +106,9 @@ class PointCancellationService(
      * 만료된 포인트인 경우 신규 적립으로 처리하고, 그렇지 않으면 기존 적립 건 복원
      */
     private fun restoreAccumulation(accumulationId: Long, restoreAmount: Money) {
-        // 적립 건 조회
+        // 적립 건 조회 (비관적 락 적용)
         val accumulation = pointAccumulationPersistencePort
-            .findById(accumulationId)
+            .findByIdWithLock(accumulationId)
             .orElseThrow { IllegalArgumentException("포인트 적립 건을 찾을 수 없습니다: $accumulationId") }
         
         // 만료 여부 확인

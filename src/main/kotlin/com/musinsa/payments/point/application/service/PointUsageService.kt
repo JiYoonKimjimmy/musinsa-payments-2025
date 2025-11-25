@@ -11,13 +11,14 @@ import com.musinsa.payments.point.domain.service.PointUsagePriorityService
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
 
 /**
  * 포인트 사용 서비스
  * PointUsageUseCase 인터페이스를 구현합니다.
  */
-@Transactional
+@Transactional(isolation = Isolation.READ_COMMITTED)
 @Service
 class PointUsageService(
     private val pointAccumulationPersistencePort: PointAccumulationPersistencePort,
@@ -46,9 +47,9 @@ class PointUsageService(
             throw com.musinsa.payments.point.domain.exception.InsufficientPointException()
         }
         
-        // 사용 가능한 적립 건 조회
+        // 사용 가능한 적립 건 조회 (비관적 락 적용)
         val availableAccumulations = pointAccumulationPersistencePort
-            .findAvailableAccumulationsByMemberId(memberId)
+            .findAvailableAccumulationsByMemberIdWithLock(memberId)
         
         // 포인트 사용 우선순위에 따라 적립 건 선택
         val selectedAccumulations = pointUsagePriorityService.selectAccumulationsForUsage(
