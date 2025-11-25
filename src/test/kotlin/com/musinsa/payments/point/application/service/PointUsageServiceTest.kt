@@ -4,12 +4,10 @@ import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyG
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
-import com.musinsa.payments.point.domain.entity.PointAccumulation
-import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.domain.entity.PointUsageStatus
+import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
 import com.musinsa.payments.point.domain.exception.InsufficientPointException
 import com.musinsa.payments.point.domain.service.PointUsagePriorityService
-import com.musinsa.payments.point.domain.valueobject.Money
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -52,12 +50,10 @@ class PointUsageServiceTest : BehaviorSpec({
             val amount = 5000L
 
             // 데이터 준비
-            val accumulation = PointAccumulation(
+            val accumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(365),
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 10000L
             )
 
             val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
@@ -95,13 +91,12 @@ class PointUsageServiceTest : BehaviorSpec({
             val amount = 10000L
             
             // 데이터 준비
-            val accumulation = PointAccumulation(
+            val accumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(5000L), // 사용 요청보다 적은 금액
-                expirationDate = LocalDate.now().plusDays(365)
+                amount = 5000L // 사용 요청보다 적은 금액
             )
-            
+
             pointAccumulationPersistencePort.save(accumulation)
             
             Then("InsufficientPointException이 발생해야 한다") {
@@ -117,20 +112,18 @@ class PointUsageServiceTest : BehaviorSpec({
             val amount = 15000L // 두 적립 건에서 사용
             
             // 데이터 준비
-            val accumulation1 = PointAccumulation(
+            val accumulation1 = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(365),
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 10000L,
+                expirationDate = LocalDate.now().plusDays(365)
             )
-            
-            val accumulation2 = PointAccumulation(
+
+            val accumulation2 = PointAccumulationFixture.create(
                 pointKey = "ACCUM02",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(200), // 만료일이 더 짧음 (우선순위)
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 10000L,
+                expirationDate = LocalDate.now().plusDays(200) // 만료일이 더 짧음 (우선순위)
             )
             
             val savedAccumulation1 = pointAccumulationPersistencePort.save(accumulation1)
@@ -183,14 +176,12 @@ class PointUsageServiceTest : BehaviorSpec({
             val amount = 3L // 3원 사용
             
             // 데이터 준비
-            val accumulation = PointAccumulation(
+            val accumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(365),
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 10000L
             )
-            
+
             val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
             val accumulationId = savedAccumulation.id
                 ?: throw IllegalStateException("적립 건 ID가 없습니다.")

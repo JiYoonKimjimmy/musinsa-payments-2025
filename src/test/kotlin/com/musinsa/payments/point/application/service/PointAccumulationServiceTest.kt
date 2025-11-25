@@ -3,12 +3,11 @@ package com.musinsa.payments.point.application.service
 import com.musinsa.payments.point.application.port.output.config.fixtures.FakePointConfigPort
 import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyGenerator
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
-import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
+import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
 import com.musinsa.payments.point.domain.exception.InvalidExpirationDateException
 import com.musinsa.payments.point.domain.exception.MaxAccumulationExceededException
 import com.musinsa.payments.point.domain.exception.MaxBalanceExceededException
-import com.musinsa.payments.point.domain.valueobject.Money
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
@@ -88,11 +87,10 @@ class PointAccumulationServiceTest : BehaviorSpec({
         When("포인트를 적립하면") {
             Then("MaxBalanceExceededException이 발생해야 한다") {
                 // 기존 적립 데이터 저장
-                val existingAccumulation = PointAccumulation(
+                val existingAccumulation = PointAccumulationFixture.create(
                     pointKey = "EXISTING",
                     memberId = memberId,
-                    amount = Money.of(currentBalance),
-                    expirationDate = LocalDate.now().plusDays(365)
+                    amount = currentBalance
                 )
                 pointAccumulationPersistencePort.save(existingAccumulation)
 
@@ -150,15 +148,14 @@ class PointAccumulationServiceTest : BehaviorSpec({
     Given("취소 가능한 적립 건이 있을 때") {
         val pointKey = "TEST1234"
         val memberId = 1L
-        val amount = Money.of(10000L)
+        val amount = 10000L
 
         When("적립을 취소하면") {
             // 테스트 데이터 저장
-            val accumulation = PointAccumulation(
+            val accumulation = PointAccumulationFixture.create(
                 pointKey = pointKey,
                 memberId = memberId,
-                amount = amount,
-                expirationDate = LocalDate.now().plusDays(365)
+                amount = amount
             )
             pointAccumulationPersistencePort.save(accumulation)
 

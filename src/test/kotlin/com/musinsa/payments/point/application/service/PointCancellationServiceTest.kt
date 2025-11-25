@@ -5,18 +5,16 @@ import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyG
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
-import com.musinsa.payments.point.domain.entity.PointAccumulation
-import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.domain.entity.PointUsageDetail
 import com.musinsa.payments.point.domain.entity.PointUsageStatus
+import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
 import com.musinsa.payments.point.domain.exception.CannotCancelUsageException
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
-import java.time.LocalDate
 
 /**
  * PointCancellationService 단위 테스트
@@ -53,12 +51,10 @@ class PointCancellationServiceTest : BehaviorSpec({
 
         When("전체 취소하면") {
             // 데이터 준비 - 적립 건 생성
-            val accumulation = PointAccumulation(
+            val accumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(365),
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 10000L
             )
             val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
             val accumulationId = savedAccumulation.id
@@ -115,12 +111,10 @@ class PointCancellationServiceTest : BehaviorSpec({
 
         When("부분 취소하면") {
             // 데이터 준비 - 적립 건 생성
-            val accumulation = PointAccumulation(
+            val accumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(20000L),
-                expirationDate = LocalDate.now().plusDays(365),
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 20000L
             )
             val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
             val accumulationId = savedAccumulation.id
@@ -208,21 +202,20 @@ class PointCancellationServiceTest : BehaviorSpec({
         val totalAmount = Money.of(5000L)
 
         When("취소하면") {
-            // 데이터 준비 - 만료된 적립 건 생성 (생성자는 만료일 검증을 하므로, 일단 유효한 날짜로 생성 후 변경)
-            val expiredAccumulation = PointAccumulation(
+            // 데이터 준비 - 만료된 적립 건 생성
+            val expiredAccumulation = PointAccumulationFixture.createExpired(
                 pointKey = "EXPIRED01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(1), // 일단 유효한 날짜로 생성
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 10000L,
+                availableAmount = 10000L - totalAmount.toLong(),
+                daysAgo = 1L
             )
             val savedExpiredAccumulation = pointAccumulationPersistencePort.save(expiredAccumulation)
             val expiredAccumulationId = savedExpiredAccumulation.id
                 ?: throw IllegalStateException("적립 건 ID가 없습니다.")
 
-            // 만료일을 과거로 변경 (반사를 사용해 직접 변경)
-            savedExpiredAccumulation.expirationDate = LocalDate.now().minusDays(1)
-            savedExpiredAccumulation.use(totalAmount) // 사용 처리
+            // 사용 처리
+            savedExpiredAccumulation.use(totalAmount)
             pointAccumulationPersistencePort.save(savedExpiredAccumulation)
 
             // 사용 건 생성
@@ -270,12 +263,10 @@ class PointCancellationServiceTest : BehaviorSpec({
 
         When("취소하면") {
             // 데이터 준비 - 적립 건 생성
-            val accumulation = PointAccumulation(
+            val accumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(365),
-                status = PointAccumulationStatus.ACCUMULATED
+                amount = 10000L
             )
             val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
             val accumulationId = savedAccumulation.id

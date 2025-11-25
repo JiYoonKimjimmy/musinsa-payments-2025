@@ -2,14 +2,13 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
-import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointUsage
+import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.data.domain.PageRequest
-import java.time.LocalDate
 
 /**
  * PointQueryService 단위 테스트
@@ -34,23 +33,21 @@ class PointQueryServiceTest : BehaviorSpec({
 
         When("포인트 잔액을 조회하면") {
             // 데이터 준비: 일부 사용된 적립 건
-            val accumulation1 = PointAccumulation(
+            val accumulation1 = PointAccumulationFixture.createPartiallyUsed(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(365)
+                amount = 10000L,
+                availableAmount = 8000L
             )
-            accumulation1.availableAmount = Money.of(8000L) // 일부 사용됨
             pointAccumulationPersistencePort.save(accumulation1)
 
             // 데이터 준비: 전액 사용 가능한 적립 건
-            val accumulation2 = PointAccumulation(
+            val accumulation2 = PointAccumulationFixture.createExpiringSoon(
                 pointKey = "ACCUM02",
                 memberId = memberId,
-                amount = Money.of(5000L),
-                expirationDate = LocalDate.now().plusDays(200)
+                amount = 5000L,
+                daysUntilExpiration = 200
             )
-            accumulation2.availableAmount = Money.of(5000L)
             pointAccumulationPersistencePort.save(accumulation2)
 
             val result = service.getBalance(memberId)
@@ -70,24 +67,21 @@ class PointQueryServiceTest : BehaviorSpec({
 
         When("포인트 잔액을 조회하면") {
             // 데이터 준비: 유효한 적립 건
-            val validAccumulation = PointAccumulation(
+            val validAccumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
                 memberId = memberId,
-                amount = Money.of(10000L),
-                expirationDate = LocalDate.now().plusDays(365)
+                amount = 10000L
             )
-            validAccumulation.availableAmount = Money.of(10000L)
             pointAccumulationPersistencePort.save(validAccumulation)
 
-            // 데이터 준비: 만료된 적립 건 (생성 후 만료일을 변경)
-            val expiredAccumulation = PointAccumulation(
+            // 데이터 준비: 만료된 적립 건
+            val expiredAccumulation = PointAccumulationFixture.createExpired(
                 pointKey = "ACCUM02",
                 memberId = memberId,
-                amount = Money.of(5000L),
-                expirationDate = LocalDate.now().plusDays(1) // 일단 유효한 날짜로 생성
+                amount = 5000L,
+                availableAmount = 3000L,
+                daysAgo = 1L
             )
-            expiredAccumulation.availableAmount = Money.of(3000L)
-            expiredAccumulation.expirationDate = LocalDate.now().minusDays(1)
             pointAccumulationPersistencePort.save(expiredAccumulation)
 
             val result = service.getBalance(memberId)
