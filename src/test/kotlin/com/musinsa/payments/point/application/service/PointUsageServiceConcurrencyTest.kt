@@ -92,9 +92,9 @@ class PointUsageServiceConcurrencyTest(
                 balance.availableBalance shouldBe 0L
             }
 
-            Then("사용 상세 내역의 총 개수는 10000개여야 한다") {
+            Then("사용 상세 내역의 총 개수는 10개여야 한다 (10개 사용 건 × 1개 적립 건)") {
                 val allDetails = pointUsageDetailPersistencePort.findAll()
-                allDetails.size shouldBe initialAmount.toInt()
+                allDetails.size shouldBe threadCount  // 10개 사용 건, 각각 1개 적립 건에서 사용
             }
         }
 
