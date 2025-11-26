@@ -31,5 +31,14 @@ class PointUsageDetailPersistenceAdapter(
         val entities = pointUsageDetailJpaRepository.findByAccumulationPointKey(pointKey)
         return pointEntityMapper.toUsageDetailDomainList(entities)
     }
+
+    override fun findAll(): List<PointUsageDetail> {
+        val entities = pointUsageDetailJpaRepository.findAll()
+        return pointEntityMapper.toUsageDetailDomainList(entities)
+    }
+
+    override fun deleteById(id: Long) {
+        pointUsageDetailJpaRepository.deleteById(id)
+    }
 }
 

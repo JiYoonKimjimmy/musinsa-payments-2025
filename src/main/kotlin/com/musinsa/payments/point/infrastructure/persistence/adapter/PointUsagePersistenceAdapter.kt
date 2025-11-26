@@ -49,5 +49,14 @@ class PointUsagePersistenceAdapter(
         val domainList = pointEntityMapper.toUsageDomainList(entityPage.content)
         return PageImpl(domainList, pageable, entityPage.totalElements)
     }
+
+    override fun findAll(): List<PointUsage> {
+        val entities = pointUsageJpaRepository.findAll()
+        return pointEntityMapper.toUsageDomainList(entities)
+    }
+
+    override fun deleteById(id: Long) {
+        pointUsageJpaRepository.deleteById(id)
+    }
 }
 
