@@ -1,7 +1,12 @@
 spring:
   application:
     name: musinsa-payments
-  
+
+  # Virtual Thread 활성화
+  threads:
+    virtual:
+      enabled: true
+
   # H2 Database 설정
   datasource:
     url: jdbc:h2:mem:testdb
