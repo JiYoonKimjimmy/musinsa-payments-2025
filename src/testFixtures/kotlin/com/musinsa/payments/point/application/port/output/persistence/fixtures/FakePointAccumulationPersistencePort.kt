@@ -97,14 +97,14 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
     /**
      * 테스트 헬퍼: 저장된 모든 적립 건 조회
      */
-    fun findAll(): List<PointAccumulation> {
+    override fun findAll(): List<PointAccumulation> {
         return storageById.values.toList()
     }
 
     /**
      * 테스트 헬퍼: ID로 적립 건 삭제
      */
-    fun deleteById(id: Long) {
+    override fun deleteById(id: Long) {
         val accumulation = storageById.remove(id)
         accumulation?.let {
             storageByPointKey.remove(it.pointKey)
