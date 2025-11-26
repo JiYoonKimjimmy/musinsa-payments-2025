@@ -32,8 +32,8 @@ class PointUsageServiceConcurrencyTest(
 
     extension(SpringExtension)
 
-    beforeEach {
-        // 각 테스트마다 데이터 초기화
+    beforeContainer {
+        // 각 Given 블록 전에 데이터 초기화
         val allUsageDetails = pointUsageDetailPersistencePort.findAll()
         allUsageDetails.forEach { detail ->
             detail.id?.let { pointUsageDetailPersistencePort.deleteById(it) }
@@ -80,6 +80,7 @@ class PointUsageServiceConcurrencyTest(
 
             latch.await(30, TimeUnit.SECONDS)
             executorService.shutdown()
+            executorService.awaitTermination(5, TimeUnit.SECONDS)
 
             Then("모든 사용이 성공해야 한다") {
                 val successCount = results.values.count { it.isSuccess }
@@ -143,7 +144,7 @@ class PointUsageServiceConcurrencyTest(
 
         When("여러 스레드가 동시에 포인트를 사용하면") {
             // 초기 적립 (5건 * 2000원 = 10000원)
-            repeat(5) { index ->
+            repeat(5) {
                 pointAccumulationService.accumulate(memberId, 2000L, null, false)
             }
 
