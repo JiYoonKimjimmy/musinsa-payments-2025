@@ -70,14 +70,14 @@ class FakePointUsageDetailPersistencePort(
     /**
      * 테스트 헬퍼: 저장된 모든 상세 내역 조회
      */
-    fun findAll(): List<PointUsageDetail> {
+    override fun findAll(): List<PointUsageDetail> {
         return storageById.values.toList()
     }
 
     /**
      * 테스트 헬퍼: ID로 상세 내역 삭제
      */
-    fun deleteById(id: Long) {
+    override fun deleteById(id: Long) {
         storageById.remove(id)
     }
 }
