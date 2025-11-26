@@ -7,6 +7,7 @@ import com.musinsa.payments.point.application.port.output.persistence.PointAccum
 import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
+import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.domain.event.PointBalanceEvent
 import com.musinsa.payments.point.domain.exception.CannotCancelUsageException
 import com.musinsa.payments.point.domain.valueobject.Money
@@ -38,7 +39,7 @@ class PointCancellationService(
         pointKey: String,
         amount: Long?,
         reason: String?
-    ): com.musinsa.payments.point.domain.entity.PointUsage {
+    ): PointUsage {
         // 사용 건 조회
         val usage = pointUsagePersistencePort.findByPointKey(pointKey)
             .orElseThrow { IllegalArgumentException("포인트 사용 건을 찾을 수 없습니다: $pointKey") }
