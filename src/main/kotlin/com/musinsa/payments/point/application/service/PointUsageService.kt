@@ -132,7 +132,7 @@ class PointUsageService(
             accumulation.use(useAmount)
 
             // 상세 내역 생성 및 추가
-            val details = createUsageDetails(
+            val detail = createUsageDetail(
                 pointUsageId = usageId,
                 pointAccumulationId = accumulationId,
                 amount = useAmount
@@ -140,7 +140,7 @@ class PointUsageService(
 
             ProcessingState(
                 remainingAmount = state.remainingAmount.subtract(useAmount),
-                usageDetails = state.usageDetails + details,
+                usageDetails = state.usageDetails + detail,
                 updatedAccumulations = state.updatedAccumulations + accumulation
             )
         }
@@ -165,21 +165,22 @@ class PointUsageService(
     }
     
     /**
-     * 1원 단위로 사용 상세 내역 생성
+     * 적립 건별 사용 상세 내역 생성
+     *
+     * 요구사항: "특정 시점에 적립된 포인트는 1원 단위까지 어떤 주문에서 사용되었는지 추적할 수 있어야 한다"
+     * - 각 적립 건당 1개의 레코드로 1원 단위 정확도 추적 달성
+     * - 성능 최적화: 사용 금액만큼 레코드 생성 → 적립 건당 1개 레코드로 개선
      */
-    private fun createUsageDetails(
+    private fun createUsageDetail(
         pointUsageId: Long,
         pointAccumulationId: Long,
         amount: Money
-    ): List<PointUsageDetail> {
-        val amountLong = amount.toLong()
-        return List(amountLong.toInt()) {
-            PointUsageDetail(
-                pointUsageId = pointUsageId,
-                pointAccumulationId = pointAccumulationId,
-                amount = Money.of(1L)
-            )
-        }
+    ): PointUsageDetail {
+        return PointUsageDetail(
+            pointUsageId = pointUsageId,
+            pointAccumulationId = pointAccumulationId,
+            amount = amount
+        )
     }
 }
 

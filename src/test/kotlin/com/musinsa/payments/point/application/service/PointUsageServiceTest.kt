@@ -70,15 +70,16 @@ class PointUsageServiceTest : BehaviorSpec({
                 result.pointKey shouldBe "POINT-001"
                 result.id shouldBe 1L
 
-                // 상세 내역이 저장되었는지 확인
+                // 상세 내역이 적립 건당 1개씩 저장되었는지 확인
                 val savedDetails = pointUsageDetailPersistencePort.findAll()
-                savedDetails.size shouldBe amount
-                savedDetails.forEach { detail ->
-                    detail.amount.toLong() shouldBe 1L
-                    detail.pointAccumulationId shouldBe accumulationId
-                    detail.pointUsageId shouldBe result.id
+                savedDetails.size shouldBe 1  // 적립 건 1개 → 레코드 1개
+
+                savedDetails[0].apply {
+                    amount.toLong() shouldBe 5000L  // 실제 사용 금액
+                    pointAccumulationId shouldBe accumulationId
+                    pointUsageId shouldBe result.id
                 }
-                
+
                 // 적립 건의 사용 가능 잔액이 차감되었는지 확인
                 val updatedAccumulation = pointAccumulationPersistencePort.findById(accumulationId).orElseThrow()
                 updatedAccumulation.availableAmount.toLong() shouldBe (10000L - amount)
@@ -138,43 +139,40 @@ class PointUsageServiceTest : BehaviorSpec({
             Then("여러 적립 건에서 포인트가 사용되어야 한다") {
                 result.totalAmount.toLong() shouldBe amount
                 
-                // 두 적립 건이 모두 업데이트되었는지 확인
-                val savedAccumulations = pointAccumulationPersistencePort.findAll()
-                savedAccumulations.size shouldBe 2
-                
                 // 우선순위에 따라 accumulation2(만료일이 더 짧음)가 먼저 사용되어야 함
                 val updatedAccumulation2 = pointAccumulationPersistencePort.findById(accumulation2Id).orElseThrow()
                 val updatedAccumulation1 = pointAccumulationPersistencePort.findById(accumulation1Id).orElseThrow()
-                
+
                 // accumulation2는 10000원 모두 사용됨
                 updatedAccumulation2.availableAmount.toLong() shouldBe 0L
                 // accumulation1은 5000원 사용됨
                 updatedAccumulation1.availableAmount.toLong() shouldBe 5000L
-                
-                // 상세 내역이 저장되었는지 확인
+
+                // 상세 내역: 적립 건 2개 사용 → 2개의 레코드
                 val savedDetails = pointUsageDetailPersistencePort.findAll()
-                savedDetails.size shouldBe amount
-                
-                // 상세 내역의 pointAccumulationId 검증
-                val detailsFromAccumulation2 = savedDetails.filter { it.pointAccumulationId == accumulation2Id }
-                val detailsFromAccumulation1 = savedDetails.filter { it.pointAccumulationId == accumulation1Id }
-                
-                detailsFromAccumulation2.size shouldBe 10000L // accumulation2에서 10000원 사용
-                detailsFromAccumulation1.size shouldBe 5000L // accumulation1에서 5000원 사용
-                
-                // 모든 상세 내역이 올바른 pointUsageId를 가지고 있는지 확인
-                savedDetails.forEach { detail ->
-                    detail.pointUsageId shouldBe result.id
-                    detail.amount.toLong() shouldBe 1L
+                savedDetails.size shouldBe 2  // 적립 건 2개 → 레코드 2개
+
+                // accumulation2에서 사용된 내역 검증
+                val detailFromAccumulation2 = savedDetails.find { it.pointAccumulationId == accumulation2Id }!!
+                detailFromAccumulation2.apply {
+                    amount.toLong() shouldBe 10000L  // accumulation2에서 10000원 사용
+                    pointUsageId shouldBe result.id
+                }
+
+                // accumulation1에서 사용된 내역 검증
+                val detailFromAccumulation1 = savedDetails.find { it.pointAccumulationId == accumulation1Id }!!
+                detailFromAccumulation1.apply {
+                    amount.toLong() shouldBe 5000L  // accumulation1에서 5000원 사용
+                    pointUsageId shouldBe result.id
                 }
             }
         }
         
-        When("1원 단위로 상세 내역을 생성해야 할 때") {
+        When("적립 건별 집계 방식으로 1원 단위 정확도를 추적해야 할 때") {
             val memberId = 1L
             val orderNumber = "ORDER123"
             val amount = 3L // 3원 사용
-            
+
             // 데이터 준비
             val accumulation = PointAccumulationFixture.create(
                 pointKey = "ACCUM01",
@@ -185,16 +183,17 @@ class PointUsageServiceTest : BehaviorSpec({
             val savedAccumulation = pointAccumulationPersistencePort.save(accumulation)
             val accumulationId = savedAccumulation.id
                 ?: throw IllegalStateException("적립 건 ID가 없습니다.")
-            
+
             val result = service.use(memberId, orderNumber, amount)
-            
-            Then("1원 단위로 상세 내역이 생성되어야 한다") {
+
+            Then("적립 건당 1개의 레코드로 1원 단위 정확도를 추적할 수 있어야 한다") {
                 val savedDetails = pointUsageDetailPersistencePort.findAll()
-                savedDetails.size shouldBe 3 // 3원이므로 3개의 상세 내역
-                savedDetails.forEach { detail ->
-                    detail.amount.toLong() shouldBe 1L // 각 상세 내역은 1원
-                    detail.pointAccumulationId shouldBe accumulationId
-                    detail.pointUsageId shouldBe result.id
+                savedDetails.size shouldBe 1  // 적립 건 1개 → 레코드 1개
+
+                savedDetails[0].apply {
+                    amount.toLong() shouldBe 3L  // 3원 정확히 추적
+                    pointAccumulationId shouldBe accumulationId
+                    pointUsageId shouldBe result.id
                 }
             }
         }
