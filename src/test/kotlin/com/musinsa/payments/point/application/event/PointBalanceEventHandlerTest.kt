@@ -1,11 +1,13 @@
 package com.musinsa.payments.point.application.event
 
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakeMemberPointBalancePersistencePort
+import com.musinsa.payments.point.application.service.PointBalanceCacheUpdateService
 import com.musinsa.payments.point.domain.entity.MemberPointBalance
 import com.musinsa.payments.point.domain.event.PointBalanceEvent
 import com.musinsa.payments.point.domain.valueobject.Money
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import org.springframework.context.ApplicationEventPublisher
 
 /**
  * PointBalanceEventHandler 단위 테스트
@@ -13,7 +15,9 @@ import io.kotest.matchers.shouldBe
 class PointBalanceEventHandlerTest : StringSpec({
     
     val memberPointBalancePersistencePort = FakeMemberPointBalancePersistencePort()
-    val handler = PointBalanceEventHandler(memberPointBalancePersistencePort)
+    val eventPublisher = NoOpEventPublisher()
+    val cacheUpdateService = PointBalanceCacheUpdateService(memberPointBalancePersistencePort, eventPublisher)
+    val handler = PointBalanceEventHandler(cacheUpdateService)
     
     beforeEach {
         memberPointBalancePersistencePort.clear()
@@ -152,3 +156,12 @@ class PointBalanceEventHandlerTest : StringSpec({
         balance.get().totalExpired shouldBe Money.of(1000L)
     }
 })
+
+/**
+ * 테스트용 No-Op 이벤트 발행자
+ */
+private class NoOpEventPublisher : ApplicationEventPublisher {
+    override fun publishEvent(event: Any) {
+        // 테스트에서는 이벤트를 무시
+    }
+}

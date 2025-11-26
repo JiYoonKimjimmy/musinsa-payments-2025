@@ -37,6 +37,10 @@ dependencies {
     // Cache
     implementation("com.github.ben-manes.caffeine:caffeine")
     
+    // Retry
+    implementation("org.springframework.retry:spring-retry")
+    implementation("org.springframework:spring-aspects")
+    
     // Database
     runtimeOnly("com.h2database:h2")
     
