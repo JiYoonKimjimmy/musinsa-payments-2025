@@ -64,8 +64,8 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
     override fun sumAvailableAmountByMemberId(memberId: Long): Money {
         val today = LocalDate.now()
         return storageById.values
-            .filter { 
-                it.memberId == memberId 
+            .filter {
+                it.memberId == memberId
                     && it.status == PointAccumulationStatus.ACCUMULATED
                     && it.hasAvailableAmount()
                     && !it.isExpiredAt(today)
@@ -74,7 +74,17 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
                 sum.add(accumulation.availableAmount)
             }
     }
-    
+
+    override fun findByIdWithLock(id: Long): java.util.Optional<PointAccumulation> {
+        // Fake 구현: 실제 락 없이 기존 메서드 재사용
+        return findById(id)
+    }
+
+    override fun findAvailableAccumulationsByMemberIdWithLock(memberId: Long): List<PointAccumulation> {
+        // Fake 구현: 실제 락 없이 기존 메서드 재사용
+        return findAvailableAccumulationsByMemberId(memberId)
+    }
+
     /**
      * 테스트 헬퍼: 저장소 초기화
      */
@@ -89,6 +99,16 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
      */
     fun findAll(): List<PointAccumulation> {
         return storageById.values.toList()
+    }
+
+    /**
+     * 테스트 헬퍼: ID로 적립 건 삭제
+     */
+    fun deleteById(id: Long) {
+        val accumulation = storageById.remove(id)
+        accumulation?.let {
+            storageByPointKey.remove(it.pointKey)
+        }
     }
 }
 

@@ -79,5 +79,15 @@ class FakePointUsagePersistencePort : PointUsagePersistencePort {
     fun findAll(): List<PointUsage> {
         return storageById.values.toList()
     }
+
+    /**
+     * 테스트 헬퍼: ID로 사용 건 삭제
+     */
+    fun deleteById(id: Long) {
+        val usage = storageById.remove(id)
+        usage?.let {
+            storageByPointKey.remove(it.pointKey)
+        }
+    }
 }
 
