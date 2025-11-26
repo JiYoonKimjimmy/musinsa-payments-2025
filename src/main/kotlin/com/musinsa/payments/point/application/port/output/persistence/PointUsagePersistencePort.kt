@@ -48,5 +48,17 @@ interface PointUsagePersistencePort {
         orderNumber: String?,
         pageable: Pageable
     ): Page<PointUsage>
+
+    /**
+     * 테스트 헬퍼: 저장된 모든 사용 건 조회
+     * @return 모든 포인트 사용 엔티티 목록
+     */
+    fun findAll(): List<PointUsage>
+
+    /**
+     * 테스트 헬퍼: ID로 사용 건 삭제
+     * @param id 삭제할 사용 건 ID
+     */
+    fun deleteById(id: Long)
 }
 

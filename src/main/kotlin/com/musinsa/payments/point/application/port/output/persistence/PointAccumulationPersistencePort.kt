@@ -73,5 +73,17 @@ interface PointAccumulationPersistencePort {
      * @return 포인트 적립 엔티티 목록
      */
     fun findAvailableAccumulationsByMemberIdWithLock(memberId: Long): List<PointAccumulation>
+
+    /**
+     * 테스트 헬퍼: 저장된 모든 적립 건 조회
+     * @return 모든 포인트 적립 엔티티 목록
+     */
+    fun findAll(): List<PointAccumulation>
+
+    /**
+     * 테스트 헬퍼: ID로 적립 건 삭제
+     * @param id 삭제할 적립 건 ID
+     */
+    fun deleteById(id: Long)
 }
 

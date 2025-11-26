@@ -62,5 +62,14 @@ class PointAccumulationPersistenceAdapter(
         val entities = pointAccumulationJpaRepository.findAvailableAccumulationsByMemberIdWithLock(memberId)
         return pointEntityMapper.toAccumulationDomainList(entities)
     }
+
+    override fun findAll(): List<PointAccumulation> {
+        val entities = pointAccumulationJpaRepository.findAll()
+        return pointEntityMapper.toAccumulationDomainList(entities)
+    }
+
+    override fun deleteById(id: Long) {
+        pointAccumulationJpaRepository.deleteById(id)
+    }
 }
 
