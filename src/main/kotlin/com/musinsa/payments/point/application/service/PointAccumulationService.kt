@@ -51,15 +51,11 @@ class PointAccumulationService(
         // 최대 적립 금액 검증
         val maxAccumulationAmount = getConfigLongValue(MAX_ACCUMULATION_AMOUNT_PER_TIME)
         if (amount > maxAccumulationAmount) {
-            throw MaxAccumulationExceededException(
-                "1회 최대 적립 금액(${maxAccumulationAmount}원)을 초과했습니다. 요청 금액: ${amount}원"
-            )
+            throw MaxAccumulationExceededException("1회 최대 적립 금액(${maxAccumulationAmount}원)을 초과했습니다. 요청 금액: ${amount}원")
         }
         
         // 최대 보유 금액 검증
-        val currentBalance = pointAccumulationPersistencePort
-            .sumAvailableAmountByMemberId(memberId)
-            .toLong()
+        val currentBalance = pointAccumulationPersistencePort.sumAvailableAmountByMemberId(memberId).toLong()
         val maxBalance = getConfigLongValue(MAX_BALANCE_PER_MEMBER)
         if (currentBalance + amount > maxBalance) {
             throw MaxBalanceExceededException()
@@ -101,8 +97,7 @@ class PointAccumulationService(
         reason: String?
     ): PointAccumulation {
         // 적립 건 조회
-        val accumulation = pointAccumulationPersistencePort
-            .findByPointKey(pointKey)
+        val accumulation = pointAccumulationPersistencePort.findByPointKey(pointKey)
             .orElseThrow { IllegalArgumentException("포인트 적립 건을 찾을 수 없습니다: $pointKey") }
         
         // 취소할 금액 (사용 가능 잔액)
@@ -147,15 +142,11 @@ class PointAccumulationService(
         val actualDays = java.time.temporal.ChronoUnit.DAYS.between(today, expirationDate).toInt()
         
         if (actualDays < minDays) {
-            throw InvalidExpirationDateException(
-                "만료일은 최소 ${minDays}일 이후여야 합니다. (현재: ${actualDays}일)"
-            )
+            throw InvalidExpirationDateException("만료일은 최소 ${minDays}일 이후여야 합니다. (현재: ${actualDays}일)")
         }
         
         if (actualDays > maxDays) {
-            throw InvalidExpirationDateException(
-                "만료일은 최대 ${maxDays}일 이하여야 합니다. (현재: ${actualDays}일)"
-            )
+            throw InvalidExpirationDateException("만료일은 최대 ${maxDays}일 이하여야 합니다. (현재: ${actualDays}일)")
         }
     }
     

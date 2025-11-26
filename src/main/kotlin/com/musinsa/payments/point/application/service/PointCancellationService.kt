@@ -8,6 +8,7 @@ import com.musinsa.payments.point.application.port.output.persistence.PointUsage
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.event.PointBalanceEvent
+import com.musinsa.payments.point.domain.exception.CannotCancelUsageException
 import com.musinsa.payments.point.domain.valueobject.Money
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Isolation
@@ -39,8 +40,7 @@ class PointCancellationService(
         reason: String?
     ): com.musinsa.payments.point.domain.entity.PointUsage {
         // 사용 건 조회
-        val usage = pointUsagePersistencePort
-            .findByPointKey(pointKey)
+        val usage = pointUsagePersistencePort.findByPointKey(pointKey)
             .orElseThrow { IllegalArgumentException("포인트 사용 건을 찾을 수 없습니다: $pointKey") }
         
         // 취소 금액 결정 (null이면 전체 취소)
@@ -52,7 +52,7 @@ class PointCancellationService(
         
         // 취소 가능 여부 확인
         if (!usage.canCancel(cancelAmount)) {
-            throw com.musinsa.payments.point.domain.exception.CannotCancelUsageException()
+            throw CannotCancelUsageException()
         }
         
         // 사용 상세 내역 조회
@@ -119,8 +119,7 @@ class PointCancellationService(
      */
     private fun restoreAccumulation(accumulationId: Long, restoreAmount: Money) {
         // 적립 건 조회 (비관적 락 적용)
-        val accumulation = pointAccumulationPersistencePort
-            .findByIdWithLock(accumulationId)
+        val accumulation = pointAccumulationPersistencePort.findByIdWithLock(accumulationId)
             .orElseThrow { IllegalArgumentException("포인트 적립 건을 찾을 수 없습니다: $accumulationId") }
         
         // 만료 여부 확인
@@ -152,7 +151,7 @@ class PointCancellationService(
         require(today.isAfter(originalExpirationDate)) { "만료되지 않은 포인트입니다." }
         
         // 만료된 포인트는 신규 적립으로 처리
-        val defaultExpirationDays = getConfigIntValue(DEFAULT_EXPIRATION_DAYS)
+        val defaultExpirationDays = pointConfigService.getIntValue(DEFAULT_EXPIRATION_DAYS)
         val newExpirationDate = today.plusDays(defaultExpirationDays.toLong())
         
         val pointKey = pointKeyGenerator.generate().value
@@ -164,13 +163,6 @@ class PointCancellationService(
             expirationDate = newExpirationDate,
             isManualGrant = false
         )
-    }
-    
-    /**
-     * 설정 값을 Int 타입으로 조회
-     */
-    private fun getConfigIntValue(configKey: String): Int {
-        return pointConfigService.getIntValue(configKey)
     }
 }
 

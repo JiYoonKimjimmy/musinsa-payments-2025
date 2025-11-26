@@ -5,7 +5,9 @@ import com.musinsa.payments.point.application.port.input.PointQueryUseCase
 import com.musinsa.payments.point.application.port.output.persistence.MemberPointBalancePersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
+import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
+import com.musinsa.payments.point.domain.entity.PointUsage
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -29,12 +31,10 @@ class PointQueryService(
     
     override fun getBalance(memberId: Long): PointBalanceResult {
         // 적립 내역 조회 (모든 상태)
-        val allAccumulations = pointAccumulationPersistencePort
-            .findByMemberIdAndStatus(memberId, PointAccumulationStatus.ACCUMULATED)
+        val allAccumulations = pointAccumulationPersistencePort.findByMemberIdAndStatus(memberId, PointAccumulationStatus.ACCUMULATED)
         
         // 총 잔액 계산 (모든 적립 금액 합계)
-        val totalBalance = allAccumulations
-            .sumOf { it.amount.toLong() }
+        val totalBalance = allAccumulations.sumOf { it.amount.toLong() }
         
         // 사용 가능 잔액 계산: 캐시된 잔액 우선 조회, 없으면 SUM 계산
         val availableBalance = getAvailableBalance(memberId, allAccumulations)
@@ -59,7 +59,7 @@ class PointQueryService(
      */
     private fun getAvailableBalance(
         memberId: Long,
-        accumulations: List<com.musinsa.payments.point.domain.entity.PointAccumulation>
+        accumulations: List<PointAccumulation>
     ): Long {
         // 캐시된 잔액 우선 조회 (O(1))
         val cachedBalance = memberPointBalancePersistencePort.findByMemberId(memberId)
@@ -78,7 +78,7 @@ class PointQueryService(
         memberId: Long,
         orderNumber: String?,
         pageable: Pageable
-    ): Page<com.musinsa.payments.point.domain.entity.PointUsage> {
+    ): Page<PointUsage> {
         return pointUsagePersistencePort.findUsageHistoryByMemberId(
             memberId = memberId,
             orderNumber = orderNumber,

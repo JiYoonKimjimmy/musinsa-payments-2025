@@ -90,7 +90,6 @@ class PointConfigService(
      * @param changedBy 변경한 사용자 (선택적)
      * @return 업데이트된 포인트 설정 엔티티
      * @throws ConfigNotFoundException 설정을 찾을 수 없는 경우
-     * @throws InvalidConfigValueException 설정 값이 유효하지 않은 경우
      */
     @Transactional
     @CacheEvict(value = ["pointConfig"], allEntries = true)

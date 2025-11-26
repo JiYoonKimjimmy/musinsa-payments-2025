@@ -60,15 +60,11 @@ class PointConfigValidator(
         val defaultDaysValue = defaultDays.getIntValue()
         
         if (minDaysValue >= maxDaysValue) {
-            throw InvalidConfigValueException(
-                "최소 만료일($minDaysValue)은 최대 만료일($maxDaysValue)보다 작아야 합니다."
-            )
+            throw InvalidConfigValueException("최소 만료일($minDaysValue)은 최대 만료일($maxDaysValue)보다 작아야 합니다.")
         }
-        
-        if (defaultDaysValue < minDaysValue || defaultDaysValue >= maxDaysValue) {
-            throw InvalidConfigValueException(
-                "기본 만료일($defaultDaysValue)은 최소 만료일($minDaysValue) 이상, 최대 만료일($maxDaysValue) 미만이어야 합니다."
-            )
+
+        if (defaultDaysValue !in minDaysValue..<maxDaysValue) {
+            throw InvalidConfigValueException("기본 만료일($defaultDaysValue)은 최소 만료일($minDaysValue) 이상, 최대 만료일($maxDaysValue) 미만이어야 합니다.")
         }
     }
     
@@ -79,10 +75,8 @@ class PointConfigValidator(
         val longValue = value.toLongOrNull()
             ?: throw InvalidConfigValueException("설정 값은 숫자여야 합니다: $value")
         
-        if (longValue < min || longValue > max) {
-            throw InvalidConfigValueException(
-                "설정 값은 $min 이상 $max 이하여야 합니다. (현재 값: $longValue)"
-            )
+        if (longValue !in min..max) {
+            throw InvalidConfigValueException("설정 값은 $min 이상 $max 이하여야 합니다. (현재 값: $longValue)")
         }
     }
     
@@ -93,10 +87,8 @@ class PointConfigValidator(
         val intValue = value.toIntOrNull()
             ?: throw InvalidConfigValueException("설정 값은 숫자여야 합니다: $value")
         
-        if (intValue < min || intValue > max) {
-            throw InvalidConfigValueException(
-                "설정 값은 $min 이상 $max 이하여야 합니다. (현재 값: $intValue)"
-            )
+        if (intValue !in min..max) {
+            throw InvalidConfigValueException("설정 값은 $min 이상 $max 이하여야 합니다. (현재 값: $intValue)")
         }
     }
     
