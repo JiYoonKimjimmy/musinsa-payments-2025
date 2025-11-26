@@ -1,5 +1,6 @@
 package com.musinsa.payments.point.application.service
 
+import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakeMemberPointBalancePersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointUsage
@@ -19,15 +20,18 @@ class PointQueryServiceTest : BehaviorSpec({
 
     val pointAccumulationPersistencePort = FakePointAccumulationPersistencePort()
     val pointUsagePersistencePort = FakePointUsagePersistencePort()
+    val memberPointBalancePersistencePort = FakeMemberPointBalancePersistencePort()
 
     val service = PointQueryService(
         pointAccumulationPersistencePort,
-        pointUsagePersistencePort
+        pointUsagePersistencePort,
+        memberPointBalancePersistencePort
     )
 
     beforeContainer {
         pointAccumulationPersistencePort.clear()
         pointUsagePersistencePort.clear()
+        memberPointBalancePersistencePort.clear()
     }
     
     Given("사용 가능한 포인트 적립 내역이 있을 때") {

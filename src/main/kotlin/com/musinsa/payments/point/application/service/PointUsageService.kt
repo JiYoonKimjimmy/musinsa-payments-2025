@@ -2,12 +2,14 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.input.PointUsageUseCase
 import com.musinsa.payments.point.application.port.output.PointKeyGenerator
+import com.musinsa.payments.point.application.port.output.event.PointBalanceEventPublisher
 import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointUsage
 import com.musinsa.payments.point.domain.entity.PointUsageDetail
+import com.musinsa.payments.point.domain.event.PointBalanceEvent
 import com.musinsa.payments.point.domain.exception.InsufficientPointException
 import com.musinsa.payments.point.domain.service.PointUsagePriorityService
 import com.musinsa.payments.point.domain.valueobject.Money
@@ -31,7 +33,8 @@ class PointUsageService(
     private val pointUsagePersistencePort: PointUsagePersistencePort,
     private val pointUsageDetailPersistencePort: PointUsageDetailPersistencePort,
     private val pointKeyGenerator: PointKeyGenerator,
-    private val pointUsagePriorityService: PointUsagePriorityService
+    private val pointUsagePriorityService: PointUsagePriorityService,
+    private val pointBalanceEventPublisher: PointBalanceEventPublisher
 ) : PointUsageUseCase {
     
     override fun use(
@@ -73,6 +76,16 @@ class PointUsageService(
         
         // 상세 내역 저장
         pointUsageDetailPersistencePort.saveAll(usageDetails)
+        
+        // 잔액 업데이트 이벤트 발행
+        pointBalanceEventPublisher.publish(
+            PointBalanceEvent.Used(
+                memberId = memberId,
+                amount = usageAmount,
+                pointKey = savedUsage.pointKey,
+                orderNumber = orderNumber
+            )
+        )
         
         return savedUsage
     }

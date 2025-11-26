@@ -2,10 +2,12 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.input.PointCancellationUseCase
 import com.musinsa.payments.point.application.port.output.PointKeyGenerator
+import com.musinsa.payments.point.application.port.output.event.PointBalanceEventPublisher
 import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
+import com.musinsa.payments.point.domain.event.PointBalanceEvent
 import com.musinsa.payments.point.domain.valueobject.Money
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Isolation
@@ -23,7 +25,8 @@ class PointCancellationService(
     private val pointUsageDetailPersistencePort: PointUsageDetailPersistencePort,
     private val pointAccumulationPersistencePort: PointAccumulationPersistencePort,
     private val pointKeyGenerator: PointKeyGenerator,
-    private val pointConfigService: PointConfigService
+    private val pointConfigService: PointConfigService,
+    private val pointBalanceEventPublisher: PointBalanceEventPublisher
 ) : PointCancellationUseCase {
     
     companion object {
@@ -97,6 +100,15 @@ class PointCancellationService(
         // 저장
         val savedUsage = pointUsagePersistencePort.save(usage)
         pointUsageDetailPersistencePort.saveAll(usageDetails)
+        
+        // 잔액 업데이트 이벤트 발행
+        pointBalanceEventPublisher.publish(
+            PointBalanceEvent.UsageCancelled(
+                memberId = usage.memberId,
+                amount = cancelAmount,
+                pointKey = pointKey
+            )
+        )
         
         return savedUsage
     }

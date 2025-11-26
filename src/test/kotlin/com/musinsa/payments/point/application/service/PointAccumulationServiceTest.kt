@@ -2,6 +2,7 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.output.config.fixtures.FakePointConfigHistoryPort
 import com.musinsa.payments.point.application.port.output.config.fixtures.FakePointConfigPort
+import com.musinsa.payments.point.application.port.output.event.fixtures.FakePointBalanceEventPublisher
 import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyGenerator
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
@@ -27,10 +28,12 @@ class PointAccumulationServiceTest : BehaviorSpec({
     val pointConfigHistoryPort = FakePointConfigHistoryPort()
     val pointConfigService = PointConfigService(pointConfigPort, pointConfigValidator, pointConfigHistoryPort)
     val pointKeyGenerator = FakePointKeyGenerator()
+    val pointBalanceEventPublisher = FakePointBalanceEventPublisher()
     val service = PointAccumulationService(
         pointAccumulationPersistencePort,
         pointConfigService,
-        pointKeyGenerator
+        pointKeyGenerator,
+        pointBalanceEventPublisher
     )
 
     beforeEach {
@@ -38,6 +41,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
         pointKeyGenerator.resetCounter()
         pointConfigPort.resetToDefaults()
         pointConfigHistoryPort.clear()
+        pointBalanceEventPublisher.clear()
     }
     
     Given("유효한 적립 요청이 있을 때") {

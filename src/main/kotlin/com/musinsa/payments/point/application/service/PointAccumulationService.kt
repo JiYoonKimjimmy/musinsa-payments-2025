@@ -2,8 +2,10 @@ package com.musinsa.payments.point.application.service
 
 import com.musinsa.payments.point.application.port.input.PointAccumulationUseCase
 import com.musinsa.payments.point.application.port.output.PointKeyGenerator
+import com.musinsa.payments.point.application.port.output.event.PointBalanceEventPublisher
 import com.musinsa.payments.point.application.port.output.persistence.PointAccumulationPersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulation
+import com.musinsa.payments.point.domain.event.PointBalanceEvent
 import com.musinsa.payments.point.domain.exception.InvalidAmountException
 import com.musinsa.payments.point.domain.exception.InvalidExpirationDateException
 import com.musinsa.payments.point.domain.exception.MaxAccumulationExceededException
@@ -22,7 +24,8 @@ import java.time.LocalDate
 class PointAccumulationService(
     private val pointAccumulationPersistencePort: PointAccumulationPersistencePort,
     private val pointConfigService: PointConfigService,
-    private val pointKeyGenerator: PointKeyGenerator
+    private val pointKeyGenerator: PointKeyGenerator,
+    private val pointBalanceEventPublisher: PointBalanceEventPublisher
 ) : PointAccumulationUseCase {
     
     companion object {
@@ -79,7 +82,18 @@ class PointAccumulationService(
         )
         
         // 저장
-        return pointAccumulationPersistencePort.save(accumulation)
+        val saved = pointAccumulationPersistencePort.save(accumulation)
+        
+        // 잔액 업데이트 이벤트 발행
+        pointBalanceEventPublisher.publish(
+            PointBalanceEvent.Accumulated(
+                memberId = memberId,
+                amount = moneyAmount,
+                pointKey = pointKey
+            )
+        )
+        
+        return saved
     }
 
     override fun cancelAccumulation(
@@ -91,11 +105,27 @@ class PointAccumulationService(
             .findByPointKey(pointKey)
             .orElseThrow { IllegalArgumentException("포인트 적립 건을 찾을 수 없습니다: $pointKey") }
         
+        // 취소할 금액 (사용 가능 잔액)
+        val cancelAmount = accumulation.availableAmount
+        
         // 적립 취소 처리
         accumulation.cancel()
         
         // 저장
-        return pointAccumulationPersistencePort.save(accumulation)
+        val saved = pointAccumulationPersistencePort.save(accumulation)
+        
+        // 잔액 업데이트 이벤트 발행 (취소 금액이 있는 경우에만)
+        if (cancelAmount.isGreaterThan(Money.ZERO)) {
+            pointBalanceEventPublisher.publish(
+                PointBalanceEvent.AccumulationCancelled(
+                    memberId = accumulation.memberId,
+                    amount = cancelAmount,
+                    pointKey = pointKey
+                )
+            )
+        }
+        
+        return saved
     }
     
     /**

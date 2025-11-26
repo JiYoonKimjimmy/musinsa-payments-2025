@@ -1,5 +1,6 @@
 package com.musinsa.payments.point.application.service
 
+import com.musinsa.payments.point.application.port.output.event.fixtures.FakePointBalanceEventPublisher
 import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyGenerator
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointUsageDetailPersistencePort
@@ -23,13 +24,15 @@ class PointUsageServiceTest : BehaviorSpec({
     val pointUsageDetailPersistencePort = FakePointUsageDetailPersistencePort()
     val pointKeyGenerator = FakePointKeyGenerator()
     val pointUsagePriorityService = PointUsagePriorityService()
+    val pointBalanceEventPublisher = FakePointBalanceEventPublisher()
     
     val service = PointUsageService(
         pointAccumulationPersistencePort,
         pointUsagePersistencePort,
         pointUsageDetailPersistencePort,
         pointKeyGenerator,
-        pointUsagePriorityService
+        pointUsagePriorityService,
+        pointBalanceEventPublisher
     )
 
     beforeContainer {
@@ -38,6 +41,7 @@ class PointUsageServiceTest : BehaviorSpec({
         pointUsageDetailPersistencePort.clear()
         pointUsagePersistencePort.clear()
         pointKeyGenerator.resetCounter()
+        pointBalanceEventPublisher.clear()
     }
 
     Given("사용 가능한 포인트가 충분할 때") {

@@ -9,8 +9,8 @@ import io.kotest.extensions.spring.SpringExtension
 import io.kotest.matchers.shouldBe
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestConstructor
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -24,7 +24,6 @@ class PointUsageServiceConcurrencyTest(
     private val pointAccumulationService: PointAccumulationService,
     private val pointUsageService: PointUsageService,
     private val pointCancellationService: PointCancellationService,
-    private val pointQueryService: PointQueryService,
     private val pointAccumulationPersistencePort: PointAccumulationPersistencePort,
     private val pointUsagePersistencePort: PointUsagePersistencePort,
     private val pointUsageDetailPersistencePort: PointUsageDetailPersistencePort
@@ -32,30 +31,49 @@ class PointUsageServiceConcurrencyTest(
 
     extension(SpringExtension)
 
-    beforeContainer {
-        // 각 Given 블록 전에 데이터 초기화
+    // 테스트에서 사용하는 memberId 목록
+    val testMemberIds = listOf(1L, 2L, 3L)
+    
+    // 테스트 데이터 초기화 함수
+    fun clearTestData() {
+        // 모든 사용 상세 내역 삭제
         val allUsageDetails = pointUsageDetailPersistencePort.findAll()
         allUsageDetails.forEach { detail ->
             detail.id?.let { pointUsageDetailPersistencePort.deleteById(it) }
         }
 
+        // 모든 사용 건 삭제
         val allUsages = pointUsagePersistencePort.findAll()
         allUsages.forEach { usage ->
             usage.id?.let { pointUsagePersistencePort.deleteById(it) }
         }
 
-        val allAccumulations = pointAccumulationPersistencePort
-            .findByMemberIdAndStatus(1L, PointAccumulationStatus.ACCUMULATED)
-        allAccumulations.forEach { accumulation ->
-            accumulation.id?.let { pointAccumulationPersistencePort.deleteById(it) }
+        // 테스트 회원들의 적립 건 삭제
+        testMemberIds.forEach { memberId ->
+            val accumulatedList = pointAccumulationPersistencePort
+                .findByMemberIdAndStatus(memberId, PointAccumulationStatus.ACCUMULATED)
+            accumulatedList.forEach { accumulation ->
+                accumulation.id?.let { pointAccumulationPersistencePort.deleteById(it) }
+            }
+            
+            val cancelledList = pointAccumulationPersistencePort
+                .findByMemberIdAndStatus(memberId, PointAccumulationStatus.CANCELLED)
+            cancelledList.forEach { accumulation ->
+                accumulation.id?.let { pointAccumulationPersistencePort.deleteById(it) }
+            }
         }
     }
 
-    Given("회원에게 10000원의 포인트가 적립되어 있을 때") {
+    beforeContainer {
+        // 각 Given 블록 전에 데이터 초기화
+        clearTestData()
+    }
+
+    Given("10개의 스레드가 동시에 포인트를 사용할 때") {
         val memberId = 1L
         val initialAmount = 10000L
 
-        When("10개의 스레드가 동시에 1000원씩 사용을 시도하면") {
+        When("10000원 적립 후 10개 스레드가 1000원씩 사용하면") {
             // 초기 적립
             pointAccumulationService.accumulate(memberId, initialAmount, null, false)
 
@@ -88,8 +106,9 @@ class PointUsageServiceConcurrencyTest(
             }
 
             Then("최종 잔액은 0원이어야 한다") {
-                val balance = pointQueryService.getBalance(memberId)
-                balance.availableBalance shouldBe 0L
+                // 실제 잔액 조회 (비동기 캐시가 아닌 적립 건 SUM)
+                val actualBalance = pointAccumulationPersistencePort.sumAvailableAmountByMemberId(memberId)
+                actualBalance.toLong() shouldBe 0L
             }
 
             Then("사용 상세 내역의 총 개수는 10개여야 한다 (10개 사용 건 × 1개 적립 건)") {
@@ -97,8 +116,13 @@ class PointUsageServiceConcurrencyTest(
                 allDetails.size shouldBe threadCount  // 10개 사용 건, 각각 1개 적립 건에서 사용
             }
         }
+    }
 
-        When("11개의 스레드가 동시에 1000원씩 사용을 시도하면 (잔액 부족)") {
+    Given("11개의 스레드가 동시에 포인트를 사용할 때 (잔액 부족 상황)") {
+        val memberId = 1L
+        val initialAmount = 10000L
+
+        When("10000원 적립 후 11개 스레드가 1000원씩 사용하면") {
             // 초기 적립
             pointAccumulationService.accumulate(memberId, initialAmount, null, false)
 
@@ -133,8 +157,9 @@ class PointUsageServiceConcurrencyTest(
             }
 
             Then("최종 잔액은 0원이어야 한다") {
-                val balance = pointQueryService.getBalance(memberId)
-                balance.availableBalance shouldBe 0L
+                // 실제 잔액 조회 (비동기 캐시가 아닌 적립 건 SUM)
+                val actualBalance = pointAccumulationPersistencePort.sumAvailableAmountByMemberId(memberId)
+                actualBalance.toLong() shouldBe 0L
             }
         }
     }
@@ -176,8 +201,9 @@ class PointUsageServiceConcurrencyTest(
             }
 
             Then("최종 잔액은 0원이어야 한다") {
-                val balance = pointQueryService.getBalance(memberId)
-                balance.availableBalance shouldBe 0L
+                // 실제 잔액 조회 (비동기 캐시가 아닌 적립 건 SUM)
+                val actualBalance = pointAccumulationPersistencePort.sumAvailableAmountByMemberId(memberId)
+                actualBalance.toLong() shouldBe 0L
             }
         }
     }
@@ -232,8 +258,9 @@ class PointUsageServiceConcurrencyTest(
             }
 
             Then("최종 잔액은 5000원이어야 한다 (10000 - 5000 사용 + 5000 취소 복원 - 5000 사용)") {
-                val balance = pointQueryService.getBalance(memberId)
-                balance.availableBalance shouldBe 5000L
+                // 실제 잔액 조회 (비동기 캐시가 아닌 적립 건 SUM)
+                val actualBalance = pointAccumulationPersistencePort.sumAvailableAmountByMemberId(memberId)
+                actualBalance.toLong() shouldBe 5000L
             }
         }
     }

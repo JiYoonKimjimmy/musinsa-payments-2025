@@ -12,6 +12,47 @@ import org.springframework.stereotype.Component
 @Component
 class PointEntityMapper {
     
+    // ==================== MemberPointBalance ====================
+    
+    /**
+     * JPA 엔티티를 도메인 엔티티로 변환
+     */
+    fun toDomain(entity: MemberPointBalanceEntity): MemberPointBalance {
+        return MemberPointBalance.restore(
+            memberId = entity.memberId,
+            availableBalance = Money.of(entity.availableBalance),
+            totalAccumulated = Money.of(entity.totalAccumulated),
+            totalUsed = Money.of(entity.totalUsed),
+            totalExpired = Money.of(entity.totalExpired),
+            version = entity.version,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
+        )
+    }
+    
+    /**
+     * 도메인 엔티티를 JPA 엔티티로 변환
+     */
+    fun toEntity(domain: MemberPointBalance): MemberPointBalanceEntity {
+        val entity = MemberPointBalanceEntity()
+        entity.memberId = domain.memberId
+        entity.availableBalance = domain.availableBalance.toBigDecimal()
+        entity.totalAccumulated = domain.totalAccumulated.toBigDecimal()
+        entity.totalUsed = domain.totalUsed.toBigDecimal()
+        entity.totalExpired = domain.totalExpired.toBigDecimal()
+        entity.version = domain.version
+        entity.createdAt = domain.createdAt
+        entity.updatedAt = domain.updatedAt
+        return entity
+    }
+    
+    /**
+     * JPA 엔티티 목록을 도메인 엔티티 목록으로 변환
+     */
+    fun toMemberPointBalanceDomainList(entities: List<MemberPointBalanceEntity>): List<MemberPointBalance> {
+        return entities.map { toDomain(it) }
+    }
+    
     // ==================== PointAccumulation ====================
     
     /**
