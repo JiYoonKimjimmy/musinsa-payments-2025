@@ -25,6 +25,11 @@ spring:
       hibernate:
         format_sql: true
         use_sql_comments: true
+        # 배치 처리 설정
+        jdbc:
+          batch_size: 50  # 배치 크기 설정
+        order_inserts: true  # INSERT 문 순서 최적화
+        order_updates: true  # UPDATE 문 순서 최적화
 
 # SpringDoc OpenAPI (Swagger) 설정
 springdoc:

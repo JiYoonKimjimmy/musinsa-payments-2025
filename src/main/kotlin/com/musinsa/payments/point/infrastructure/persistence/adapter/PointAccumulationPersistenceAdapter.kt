@@ -25,6 +25,12 @@ class PointAccumulationPersistenceAdapter(
         return pointEntityMapper.toDomain(savedEntity)
     }
     
+    override fun saveAll(accumulations: List<PointAccumulation>): List<PointAccumulation> {
+        val entities = accumulations.map { pointEntityMapper.toEntity(it) }
+        val savedEntities = pointAccumulationJpaRepository.saveAll(entities)
+        return pointEntityMapper.toAccumulationDomainList(savedEntities)
+    }
+    
     override fun findById(id: Long): Optional<PointAccumulation> {
         return pointAccumulationJpaRepository.findById(id)
             .map { pointEntityMapper.toDomain(it) }

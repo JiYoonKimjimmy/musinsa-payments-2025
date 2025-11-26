@@ -30,6 +30,10 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
         return accumulation
     }
     
+    override fun saveAll(accumulations: List<PointAccumulation>): List<PointAccumulation> {
+        return accumulations.map { save(it) }
+    }
+    
     override fun findById(id: Long): java.util.Optional<PointAccumulation> {
         return java.util.Optional.ofNullable(storageById[id])
     }

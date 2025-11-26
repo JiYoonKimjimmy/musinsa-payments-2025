@@ -20,6 +20,14 @@ interface PointAccumulationPersistencePort {
     fun save(accumulation: PointAccumulation): PointAccumulation
     
     /**
+     * 포인트 적립 일괄 저장
+     * 배치 처리를 통해 성능을 최적화합니다.
+     * @param accumulations 저장할 포인트 적립 엔티티 목록
+     * @return 저장된 포인트 적립 엔티티 목록 (id 포함)
+     */
+    fun saveAll(accumulations: List<PointAccumulation>): List<PointAccumulation>
+    
+    /**
      * ID로 조회
      * @param id 포인트 적립 ID
      * @return 포인트 적립 엔티티 (없으면 empty)
