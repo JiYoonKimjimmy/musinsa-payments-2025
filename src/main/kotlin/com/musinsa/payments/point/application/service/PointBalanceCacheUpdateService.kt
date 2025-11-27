@@ -34,16 +34,13 @@ class PointBalanceCacheUpdateService(
      * @param action 잔액에 대해 수행할 액션
      */
     @Retryable(
-        retryFor = [Exception::class],
         maxAttempts = 3,
-        backoff = Backoff(delay = 1000, multiplier = 2.0)
+        backoff = Backoff(delay = 1000, multiplier = 2.0),
+        retryFor = [Exception::class],
     )
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun updateBalanceWithRetry(event: PointBalanceEvent, action: (MemberPointBalance) -> Unit) {
-        logger.info(
-            "포인트 ${event.eventTypeName} 이벤트 처리 시작: " +
-            "memberId=${event.memberId}, amount=${event.amount}, pointKey=${event.pointKey}${event.additionalLogInfo}"
-        )
+        logger.info("포인트 ${event.eventTypeName} 이벤트 처리 시작: memberId=${event.memberId}, amount=${event.amount}, pointKey=${event.pointKey}${event.additionalLogInfo}")
         
         val balance = memberPointBalancePersistencePort.findByMemberIdWithLock(event.memberId)
             .orElseGet { MemberPointBalance(event.memberId) }
@@ -69,11 +66,7 @@ class PointBalanceCacheUpdateService(
         event: PointBalanceEvent,
         @Suppress("UNUSED_PARAMETER") action: (MemberPointBalance) -> Unit
     ) {
-        logger.error(
-            "포인트 ${event.eventTypeName} 이벤트 처리 최종 실패. 보정 요청 발행: " +
-            "memberId=${event.memberId}, pointKey=${event.pointKey}, error=${e.message}",
-            e
-        )
+        logger.error("포인트 ${event.eventTypeName} 이벤트 처리 최종 실패. 보정 요청 발행: memberId=${event.memberId}, pointKey=${event.pointKey}, error=${e.message}", e)
         
         // 잔액 보정 요청 이벤트 발행
         eventPublisher.publishEvent(

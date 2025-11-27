@@ -33,8 +33,8 @@ class PointBalanceEventHandlerTest : StringSpec({
         )
         
         // when
-        handler.handleAccumulated(event)
-        
+        handler.handlePointBalanceEvent(event)
+
         // then
         val balance = memberPointBalancePersistencePort.findByMemberId(memberId)
         balance.isPresent shouldBe true
@@ -56,7 +56,7 @@ class PointBalanceEventHandlerTest : StringSpec({
         )
         
         // when
-        handler.handleAccumulated(event)
+        handler.handlePointBalanceEvent(event)
         
         // then
         val balance = memberPointBalancePersistencePort.findByMemberId(memberId)
@@ -79,7 +79,7 @@ class PointBalanceEventHandlerTest : StringSpec({
         )
         
         // when
-        handler.handleUsed(event)
+        handler.handlePointBalanceEvent(event)
         
         // then
         val balance = memberPointBalancePersistencePort.findByMemberId(memberId)
@@ -103,7 +103,7 @@ class PointBalanceEventHandlerTest : StringSpec({
         )
         
         // when
-        handler.handleUsageCancelled(event)
+        handler.handlePointBalanceEvent(event)
         
         // then
         val balance = memberPointBalancePersistencePort.findByMemberId(memberId)
@@ -125,7 +125,7 @@ class PointBalanceEventHandlerTest : StringSpec({
         )
         
         // when
-        handler.handleAccumulationCancelled(event)
+        handler.handlePointBalanceEvent(event)
         
         // then
         val balance = memberPointBalancePersistencePort.findByMemberId(memberId)
@@ -147,7 +147,7 @@ class PointBalanceEventHandlerTest : StringSpec({
         )
         
         // when
-        handler.handleExpired(event)
+        handler.handlePointBalanceEvent(event)
         
         // then
         val balance = memberPointBalancePersistencePort.findByMemberId(memberId)

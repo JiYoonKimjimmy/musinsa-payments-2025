@@ -1,5 +1,6 @@
 package com.musinsa.payments.point.domain.event
 
+import com.musinsa.payments.point.domain.entity.MemberPointBalance
 import com.musinsa.payments.point.domain.valueobject.Money
 import java.time.LocalDateTime
 
@@ -18,6 +19,9 @@ sealed class PointBalanceEvent(
     
     /** 추가 로그 정보 (옵션) */
     open val additionalLogInfo: String = ""
+    
+    /** 잔액 업데이트 액션 - 각 이벤트가 자신의 행동을 캡슐화 */
+    abstract fun action(balance: MemberPointBalance)
 
     /**
      * 포인트 적립 이벤트
@@ -29,6 +33,7 @@ sealed class PointBalanceEvent(
         override val occurredAt: LocalDateTime = LocalDateTime.now()
     ) : PointBalanceEvent(memberId, amount, pointKey, occurredAt) {
         override val eventTypeName = "적립"
+        override fun action(balance: MemberPointBalance) = balance.addBalance(amount)
     }
     
     /**
@@ -41,6 +46,7 @@ sealed class PointBalanceEvent(
         override val occurredAt: LocalDateTime = LocalDateTime.now()
     ) : PointBalanceEvent(memberId, amount, pointKey, occurredAt) {
         override val eventTypeName = "적립 취소"
+        override fun action(balance: MemberPointBalance) = balance.cancelAccumulation(amount)
     }
     
     /**
@@ -55,6 +61,7 @@ sealed class PointBalanceEvent(
     ) : PointBalanceEvent(memberId, amount, pointKey, occurredAt) {
         override val eventTypeName = "사용"
         override val additionalLogInfo = ", orderNumber=$orderNumber"
+        override fun action(balance: MemberPointBalance) = balance.subtractBalance(amount)
     }
     
     /**
@@ -67,6 +74,7 @@ sealed class PointBalanceEvent(
         override val occurredAt: LocalDateTime = LocalDateTime.now()
     ) : PointBalanceEvent(memberId, amount, pointKey, occurredAt) {
         override val eventTypeName = "사용 취소"
+        override fun action(balance: MemberPointBalance) = balance.restoreBalance(amount)
     }
     
     /**
@@ -79,6 +87,6 @@ sealed class PointBalanceEvent(
         override val occurredAt: LocalDateTime = LocalDateTime.now()
     ) : PointBalanceEvent(memberId, amount, pointKey, occurredAt) {
         override val eventTypeName = "만료"
+        override fun action(balance: MemberPointBalance) = balance.expireBalance(amount)
     }
 }
-
