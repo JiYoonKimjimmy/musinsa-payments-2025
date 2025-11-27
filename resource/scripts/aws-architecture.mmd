@@ -1,64 +1,61 @@
 graph TB
     Internet[Internet]
-    Route53[Route 53<br/>DNS]
-    ALB[Application Load Balancer<br/>SSL/TLS Termination<br/>Health Check]
+    Route53[Route 53]
     
-    subgraph VPC["VPC (10.0.0.0/16)"]
-        subgraph PublicSubnet1["Public Subnet AZ-1<br/>(10.0.1.0/24)"]
-            NAT1[NAT Gateway]
+    subgraph VPC["VPC"]
+        subgraph Public["Public Subnets"]
+            ALB[Application Load Balancer]
         end
         
-        subgraph PrivateSubnet1["Private Subnet AZ-1<br/>(10.0.10.0/24)"]
-            ECS1[ECS Service AZ-1]
-            Fargate1[Fargate Task<br/>Spring Boot]
-            ElastiCache[ElastiCache Redis<br/>Config Cache]
-            RDS_Primary[RDS Aurora<br/>Primary<br/>PostgreSQL]
-        end
-        
-        subgraph PublicSubnet2["Public Subnet AZ-2<br/>(10.0.2.0/24)"]
-            NAT2[NAT Gateway]
-        end
-        
-        subgraph PrivateSubnet2["Private Subnet AZ-2<br/>(10.0.20.0/24)"]
-            ECS2[ECS Service AZ-2]
-            Fargate2[Fargate Task<br/>Spring Boot]
-            RDS_Replica[RDS Aurora<br/>Read Replica<br/>PostgreSQL]
+        subgraph Private["Private Subnets"]
+            subgraph AZ1["Availability Zone 1"]
+                ECS1[ECS Fargate<br/>Spring Boot]
+            end
+            
+            subgraph AZ2["Availability Zone 2"]
+                ECS2[ECS Fargate<br/>Spring Boot]
+            end
+            
+            ElastiCache[ElastiCache<br/>Redis]
+            
+            subgraph Database["Database Layer"]
+                RDS_Primary[(Aurora Primary)]
+                RDS_Replica[(Aurora Replica)]
+            end
         end
     end
     
-    CloudWatch[CloudWatch<br/>Monitoring & Logging]
+    CloudWatch[CloudWatch<br/>Monitoring]
+    ECR[ECR<br/>Container Registry]
     
     Internet --> Route53
     Route53 --> ALB
     ALB --> ECS1
     ALB --> ECS2
-    ECS1 --> Fargate1
-    ECS2 --> Fargate2
-    Fargate1 --> ElastiCache
-    Fargate1 --> RDS_Primary
-    Fargate2 --> ElastiCache
-    Fargate2 --> RDS_Replica
-    RDS_Primary --> RDS_Replica
-    Fargate1 --> CloudWatch
-    Fargate2 --> CloudWatch
-    RDS_Primary --> CloudWatch
-    ElastiCache --> CloudWatch
-    ALB --> CloudWatch
+    ECS1 --> ElastiCache
+    ECS2 --> ElastiCache
+    ECS1 --> RDS_Primary
+    ECS2 --> RDS_Primary
+    RDS_Primary -.->|Replication| RDS_Replica
     
-    style Internet fill:#e1f5ff
-    style Route53 fill:#ff9900
-    style ALB fill:#ff9900
-    style ECS1 fill:#ff9900
-    style ECS2 fill:#ff9900
-    style Fargate1 fill:#ff9900
-    style Fargate2 fill:#ff9900
-    style ElastiCache fill:#ff9900
-    style RDS_Primary fill:#ff9900
-    style RDS_Replica fill:#ff9900
-    style CloudWatch fill:#ff9900
-    style VPC fill:#f9f9f9
-    style PublicSubnet1 fill:#e8f4f8
-    style PublicSubnet2 fill:#e8f4f8
-    style PrivateSubnet1 fill:#fff4e6
-    style PrivateSubnet2 fill:#fff4e6
-
+    ECS1 -.-> CloudWatch
+    ECS2 -.-> CloudWatch
+    ECR -.-> ECS1
+    ECR -.-> ECS2
+    
+    style Internet fill:#e1f5ff,stroke:#333
+    style Route53 fill:#ff9900,stroke:#333,color:#fff
+    style ALB fill:#ff9900,stroke:#333,color:#fff
+    style ECS1 fill:#ff9900,stroke:#333,color:#fff
+    style ECS2 fill:#ff9900,stroke:#333,color:#fff
+    style ElastiCache fill:#ff9900,stroke:#333,color:#fff
+    style RDS_Primary fill:#3b48cc,stroke:#333,color:#fff
+    style RDS_Replica fill:#3b48cc,stroke:#333,color:#fff
+    style CloudWatch fill:#ff9900,stroke:#333,color:#fff
+    style ECR fill:#ff9900,stroke:#333,color:#fff
+    style VPC fill:#f5f5f5,stroke:#333
+    style Public fill:#e8f4e8,stroke:#333
+    style Private fill:#fff4e6,stroke:#333
+    style AZ1 fill:#ffefd5,stroke:#333
+    style AZ2 fill:#ffefd5,stroke:#333
+    style Database fill:#e6f3ff,stroke:#333

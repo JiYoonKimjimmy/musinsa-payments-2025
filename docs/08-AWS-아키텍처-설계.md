@@ -2,429 +2,199 @@
 
 ## 1. 개요
 
-무료 포인트 시스템을 AWS 기반으로 서비스한다고 가정했을 때의 아키텍처를 설계합니다. 확장성, 가용성, 보안을 고려한 구성입니다.
+무료 포인트 시스템을 AWS 기반으로 서비스한다고 가정했을 때의 아키텍처입니다. 확장성, 가용성, 보안을 고려한 구성입니다.
 
-## 2. 아키텍처 개요
+## 2. 주요 AWS 서비스
 
-### 2.1 아키텍처 스타일
+| 영역       | 서비스                       | 용도                    |
+|----------|---------------------------|-----------------------|
+| 컴퓨팅      | ECS (Fargate)             | Spring Boot 애플리케이션 실행 |
+| 데이터베이스   | RDS (Aurora PostgreSQL)   | 포인트 데이터 저장            |
+| 캐싱       | ElastiCache (Redis)       | 설정 캐싱, 세션 캐싱          |
+| 로드 밸런싱   | Application Load Balancer | HTTP/HTTPS 로드 밸런싱     |
+| DNS      | Route 53                  | 도메인 관리, 헬스체크 기반 페일오버  |
+| 모니터링     | CloudWatch                | 메트릭, 로그, 알람           |
+| 보안       | VPC, Security Group, IAM  | 네트워크 격리, 접근 제어        |
+| 컨테이너 저장소 | ECR                       | Docker 이미지 저장         |
 
-- **마이크로서비스 아키텍처**: 포인트 시스템을 독립적인 서비스로 구성
-- **서버리스 옵션**: 일부 기능은 서버리스로 구성 가능
-- **컨테이너 기반**: ECS/EKS를 활용한 컨테이너 오케스트레이션
-
-### 2.2 주요 AWS 서비스
-
-- **컴퓨팅**: ECS (Fargate) 또는 EC2
-- **데이터베이스**: RDS (PostgreSQL/MySQL) 또는 Aurora
-- **캐싱**: ElastiCache (Redis)
-- **로드 밸런싱**: Application Load Balancer (ALB)
-- **API 게이트웨이**: API Gateway (옵션)
-- **모니터링**: CloudWatch
-- **보안**: VPC, Security Group, IAM
+---
 
 ## 3. 아키텍처 다이어그램
 
-### 3.1 전체 아키텍처
-
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Internet                              │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    Route 53 (DNS)                            │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│              Application Load Balancer (ALB)                 │
-│              - SSL/TLS Termination                           │
-│              - Health Check                                  │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-        ┌──────────────────┴──────────────────┐
-        │                                     │
-        ↓                                     ↓
-┌─────────────────────┐            ┌─────────────────────┐
-│   ECS Service       │            │   ECS Service        │
-│   (Availability     │            │   (Availability      │
-│    Zone 1)          │            │    Zone 2)           │
-│                     │            │                      │
-│  ┌───────────────┐  │            │  ┌───────────────┐   │
-│  │  Fargate      │  │            │  │  Fargate      │   │
-│  │  Task         │  │            │  │  Task         │   │
-│  │  (Spring Boot)│  │            │  │  (Spring Boot)│   │
-│  └───────────────┘  │            │  └───────────────┘   │
-└─────────┬───────────┘            └──────────┬──────────┘
-          │                                   │
-          └──────────────┬────────────────────┘
-                         │
-          ┌──────────────┴──────────────┐
-          │                             │
-          ↓                             ↓
-┌─────────────────────┐      ┌─────────────────────┐
-│   ElastiCache       │      │   RDS (Aurora)       │
-│   (Redis)           │      │   (Primary)          │
-│   - Config Cache    │      │   - Point Data       │
-│   - Session Cache   │      │   - Config Data      │
-└─────────────────────┘      └──────────┬──────────┘
-                                        │
-                                        ↓
-                              ┌─────────────────────┐
-                              │   RDS (Aurora)      │
-                              │   (Replica)         │
-                              │   - Read Replica    │
-                              └─────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                           Internet                                  │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               ↓
+                        [ Route 53 ]
+                               ↓
+┌────────────────────────────────────────────────────────────────────┐
+│                        VPC (Multi-AZ)                               │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │                     Public Subnet                             │  │
+│  │              [ Application Load Balancer ]                    │  │
+│  │                    (SSL Termination)                          │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                               ↓                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    Private Subnet                            │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │   │
+│  │  │ ECS Fargate │  │ ECS Fargate │  │   ElastiCache       │  │   │
+│  │  │   (AZ-1)    │  │   (AZ-2)    │  │     (Redis)         │  │   │
+│  │  └──────┬──────┘  └──────┬──────┘  └─────────────────────┘  │   │
+│  │         └────────┬───────┘                                   │   │
+│  │                  ↓                                           │   │
+│  │  ┌─────────────────────────────────────────────────────────┐│   │
+│  │  │            RDS Aurora (Multi-AZ)                        ││   │
+│  │  │     [ Primary (AZ-1) ] ←→ [ Replica (AZ-2) ]            ││   │
+│  │  └─────────────────────────────────────────────────────────┘│   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 네트워크 구성
+---
+
+## 4. 컴포넌트 설계
+
+### 4.1 컴퓨팅 (ECS Fargate)
+
+| 항목           | 설정                           |
+|--------------|------------------------------|
+| Task 사양      | 0.5~2 vCPU, 1~4GB Memory     |
+| Task 수       | 최소 2개, 최대 10개 (Auto Scaling) |
+| 배포 방식        | Multi-AZ                     |
+| Health Check | `/actuator/health`           |
+| Base Image   | OpenJDK 21 (Amazon Linux 2)  |
+
+### 4.2 데이터베이스 (Aurora PostgreSQL)
+
+| 항목      | 설정                           |
+|---------|------------------------------|
+| 인스턴스 타입 | db.t3.medium (Primary)       |
+| 배포 방식   | Multi-AZ (Primary + Replica) |
+| 자동 백업   | 7일 보관                        |
+| 암호화     | 저장 데이터 암호화 활성화               |
+| 커넥션 풀   | HikariCP (max: 20, min: 5)   |
+
+### 4.3 캐싱 (ElastiCache Redis)
+
+| 항목       | 설정               |
+|----------|------------------|
+| 엔진       | Redis 7.x        |
+| 노드 타입    | cache.t3.small   |
+| Multi-AZ | 운영 환경 활성화        |
+| 용도       | 설정 캐싱, 분산 락 (옵션) |
+
+---
+
+## 5. 확장성 및 가용성
+
+### 5.1 Auto Scaling 정책
+
+| 트리거 조건            | 액션             |
+|-------------------|----------------|
+| CPU > 70% (5분 지속) | Task +2 스케일 아웃 |
+| CPU < 30% (5분 지속) | Task -1 스케일 인  |
+| Memory > 80%      | Task +2 스케일 아웃 |
+
+### 5.2 고가용성 구성
+
+| 컴포넌트        | 가용성 전략                   |
+|-------------|--------------------------|
+| ECS         | Multi-AZ Task 배포         |
+| RDS Aurora  | Multi-AZ + Auto Failover |
+| ElastiCache | Multi-AZ (운영)            |
+| ALB         | Cross-Zone 로드 밸런싱        |
+
+### 5.3 재해복구 (DR) 목표
+
+| 지표  | 목표     | 전략                       |
+|-----|--------|--------------------------|
+| RTO | 30분 이내 | Warm Standby (DR Region) |
+| RPO | 5분 이내  | Cross-Region Replication |
+
+---
+
+## 6. 보안 설계
+
+### 6.1 네트워크 보안
+
+| 컴포넌트        | Security Group 규칙              |
+|-------------|--------------------------------|
+| ALB         | Inbound: 443 from 0.0.0.0/0    |
+| ECS         | Inbound: 8080 from ALB SG only |
+| RDS         | Inbound: 5432 from ECS SG only |
+| ElastiCache | Inbound: 6379 from ECS SG only |
+
+### 6.2 데이터 보안
+
+| 항목      | 적용                       |
+|---------|--------------------------|
+| 전송 암호화  | TLS 1.2 이상               |
+| 저장 암호화  | RDS, ElastiCache 암호화 활성화 |
+| 비밀 관리   | AWS Secrets Manager      |
+| 접근 제어   | IAM Role (최소 권한 원칙)      |
+
+---
+
+## 7. 모니터링 및 알람
+
+### 7.1 CloudWatch 메트릭
+
+| 서비스         | 주요 메트릭                                     |
+|-------------|--------------------------------------------|
+| ECS         | CPUUtilization, MemoryUtilization          |
+| RDS         | DatabaseConnections, ReadLatency           |
+| ElastiCache | CacheHitRate, CurrConnections              |
+| ALB         | RequestCount, TargetResponseTime, 5XXCount |
+
+### 7.2 알람 설정
+
+| 알람             | 조건                   | 임계값      |
+|----------------|----------------------|----------|
+| High CPU       | CPU > 80% (5분 지속)    | Critical |
+| High Memory    | Memory > 85% (5분 지속) | Warning  |
+| DB Connections | Connections > 80%    | Warning  |
+| Error Rate     | 5XX > 5% (5분 지속)     | Critical |
+
+---
+
+## 8. 배포 전략
+
+### 8.1 CI/CD 파이프라인
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        VPC                                   │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │          Public Subnet (AZ-1)                         │  │
-│  │  - ALB                                                 │  │
-│  │  - NAT Gateway                                         │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │          Private Subnet (AZ-1)                        │  │
-│  │  - ECS Tasks                                          │  │
-│  │  - ElastiCache                                        │  │
-│  │  - RDS (Primary)                                      │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │          Public Subnet (AZ-2)                         │  │
-│  │  - NAT Gateway                                         │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │          Private Subnet (AZ-2)                        │  │
-│  │  - ECS Tasks                                          │  │
-│  │  - RDS (Replica)                                      │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+GitHub → CodePipeline → CodeBuild → ECR → ECS (Blue/Green)
 ```
 
-## 4. 컴포넌트 상세 설계
+### 8.2 배포 방식
 
-### 4.1 컴퓨팅 레이어
+| 방식          | 설명                  | 사용 시점    |
+|-------------|---------------------|----------|
+| Blue/Green  | 무중단 배포, 즉시 롤백 가능    | 운영 환경    |
+| Rolling     | 점진적 업데이트            | 개발/스테이징  |
 
-#### 4.1.1 ECS (Elastic Container Service) with Fargate
+---
 
-**선택 이유**:
-- 서버 관리 불필요
-- 자동 스케일링
-- 컨테이너 기반 배포
+## 9. 예상 비용 (월간)
 
-**구성**:
-- **Task Definition**: Spring Boot 애플리케이션 컨테이너
-- **Service**: ECS 서비스 (다중 AZ 배포)
-- **Auto Scaling**: CPU/메모리 기반 자동 스케일링
+| 서비스         | 예상 비용           |
+|-------------|-----------------|
+| ECS Fargate | $50 ~ $200      |
+| RDS Aurora  | $100 ~ $300     |
+| ElastiCache | $15 ~ $50       |
+| ALB         | $20 ~ $30       |
+| 기타          | $10 ~ $50       |
+| **합계**      | **$195 ~ $630** |
 
-**리소스 사양**:
-- CPU: 0.5 vCPU ~ 2 vCPU (트래픽에 따라 조정)
-- Memory: 1GB ~ 4GB
-- Task Count: 최소 2개, 최대 10개
+> 💡 비용 최적화: Reserved Instance (RDS), Savings Plans (Fargate) 활용 권장
 
-#### 4.1.2 컨테이너 이미지
+---
 
-- **Base Image**: Amazon Linux 2 또는 OpenJDK 21
-- **애플리케이션**: Spring Boot 3.x JAR
-- **Health Check**: `/actuator/health` 엔드포인트
-
-### 4.2 데이터베이스 레이어
-
-#### 4.2.1 Amazon RDS (Aurora PostgreSQL)
-
-**선택 이유**:
-- 고가용성 (Multi-AZ)
-- 자동 백업 및 복구
-- 읽기 전용 복제본 지원
-- 성능 최적화
-
-**구성**:
-- **Primary Instance**: Multi-AZ 배포
-- **Read Replica**: 읽기 전용 복제본 (옵션)
-- **Backup**: 자동 백업 (7일 보관)
-- **Storage**: SSD (GP3)
-
-**인스턴스 사양**:
-- **Primary**: db.t3.medium (2 vCPU, 4GB RAM)
-- **Replica**: db.t3.small (2 vCPU, 2GB RAM)
-
-#### 4.2.2 데이터베이스 연결 풀
-
-- **HikariCP**: 커넥션 풀 관리
-- **Max Pool Size**: 20
-- **Min Idle**: 5
-
-### 4.3 캐싱 레이어
-
-#### 4.3.1 Amazon ElastiCache (Redis)
-
-**용도**:
-- 포인트 설정 캐싱
-- 세션 캐싱 (옵션)
-- 분산 락 (옵션)
-
-**구성**:
-- **Engine**: Redis 7.x
-- **Node Type**: cache.t3.micro (개발) / cache.t3.small (운영)
-- **Multi-AZ**: 활성화 (운영 환경)
-
-### 4.4 로드 밸런싱
-
-#### 4.4.1 Application Load Balancer (ALB)
-
-**기능**:
-- HTTP/HTTPS 로드 밸런싱
-- SSL/TLS 종료
-- Health Check
-- Path-based 라우팅 (옵션)
-
-**구성**:
-- **Listener**: HTTPS (443), HTTP (80 → HTTPS 리다이렉트)
-- **Target Group**: ECS 서비스
-- **Health Check**: `/actuator/health`
-
-### 4.5 네트워크 보안
-
-#### 4.5.1 VPC 구성
-
-- **CIDR**: 10.0.0.0/16
-- **Public Subnet**: 10.0.1.0/24, 10.0.2.0/24
-- **Private Subnet**: 10.0.10.0/24, 10.0.20.0/24
-
-#### 4.5.2 Security Group
-
-**ALB Security Group**:
-- Inbound: 443 (HTTPS) from 0.0.0.0/0
-- Outbound: All traffic
-
-**ECS Security Group**:
-- Inbound: 8080 from ALB Security Group
-- Outbound: All traffic
-
-**RDS Security Group**:
-- Inbound: 5432 (PostgreSQL) from ECS Security Group
-- Outbound: None
-
-**ElastiCache Security Group**:
-- Inbound: 6379 (Redis) from ECS Security Group
-- Outbound: None
-
-## 5. 확장성 설계
-
-### 5.1 수평 확장 (Horizontal Scaling)
-
-#### 5.1.1 ECS Auto Scaling
-
-**트리거**:
-- CPU 사용률 > 70%: 스케일 아웃
-- CPU 사용률 < 30%: 스케일 인
-- 메모리 사용률 > 80%: 스케일 아웃
-
-**정책**:
-- 최소 태스크: 2개
-- 최대 태스크: 10개
-- 스케일 아웃 단계: +2
-- 스케일 인 단계: -1
-
-#### 5.1.2 데이터베이스 읽기 확장
-
-- **Read Replica**: 읽기 전용 쿼리는 복제본으로 라우팅
-- **Connection Pool**: 읽기/쓰기 분리
-
-### 5.2 수직 확장 (Vertical Scaling)
-
-- **ECS Task**: CPU/메모리 증가
-- **RDS Instance**: 인스턴스 타입 업그레이드
-
-## 6. 가용성 설계
-
-### 6.1 Multi-AZ 배포
-
-- **ECS Service**: 여러 가용 영역에 태스크 배포
-- **RDS**: Multi-AZ 활성화
-- **ElastiCache**: Multi-AZ 활성화 (운영)
-
-### 6.2 Health Check
-
-- **ALB Health Check**: `/actuator/health`
-- **ECS Task Health Check**: 컨테이너 레벨 헬스 체크
-- **RDS**: 자동 페일오버
-
-### 6.3 백업 및 복구
-
-- **RDS Automated Backups**: 7일 보관
-- **Point-in-Time Recovery**: 활성화
-- **Snapshot**: 수동 스냅샷 생성 (주기적)
-
-### 6.4 재해복구 (Disaster Recovery) 전략
-
-#### 6.4.1 복구 목표
-
-| 지표 | 목표값 | 설명 |
-|------|--------|------|
-| **RTO** (Recovery Time Objective) | 30분 이내 | 장애 발생 후 서비스 복구까지 소요 시간 |
-| **RPO** (Recovery Point Objective) | 5분 이내 | 장애 발생 시 최대 데이터 손실 허용 범위 |
-
-#### 6.4.2 DR 전략 유형
-
-**선택: Warm Standby**
-
-- **Primary Region**: ap-northeast-2 (서울)
-- **DR Region**: ap-northeast-1 (도쿄)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Primary (Seoul)                           │
-│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐       │
-│  │  ECS (2+)   │   │   Aurora    │   │ ElastiCache │       │
-│  │   Active    │   │   Primary   │   │    Active   │       │
-│  └─────────────┘   └──────┬──────┘   └─────────────┘       │
-└───────────────────────────┼─────────────────────────────────┘
-                            │ Cross-Region Replication
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                     DR (Tokyo)                               │
-│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐       │
-│  │  ECS (1)    │   │   Aurora    │   │ ElastiCache │       │
-│  │  Standby    │   │   Replica   │   │   Standby   │       │
-│  └─────────────┘   └─────────────┘   └─────────────┘       │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### 6.4.3 페일오버 절차
-
-1. **자동 감지**: CloudWatch 알람으로 Primary Region 장애 감지
-2. **DNS 전환**: Route 53 Health Check 기반 자동 페일오버
-3. **Aurora 승격**: DR Region의 Aurora Replica를 Primary로 승격
-4. **ECS 스케일 아웃**: DR Region ECS Task 수 증가
-5. **검증**: 서비스 정상 동작 확인
-
-#### 6.4.4 정기 DR 훈련
-
-- **빈도**: 분기별 1회
-- **범위**: 전체 페일오버 시뮬레이션
-- **목표**: RTO/RPO 목표 달성 검증
-
-## 7. 보안 설계
-
-### 7.1 네트워크 보안
-
-- **VPC**: 격리된 네트워크 환경
-- **Security Group**: 최소 권한 원칙
-- **NAT Gateway**: 프라이빗 서브넷의 아웃바운드 트래픽
-
-### 7.2 데이터 보안
-
-- **암호화 전송**: TLS 1.2 이상
-- **암호화 저장**: RDS 암호화 활성화
-- **Secrets Manager**: 데이터베이스 비밀번호 관리
-
-### 7.3 접근 제어
-
-- **IAM Role**: ECS 태스크에 IAM 역할 할당
-- **Least Privilege**: 최소 권한 원칙
-
-## 8. 모니터링 및 로깅
-
-### 8.1 CloudWatch
-
-#### 8.1.1 메트릭
-
-- **ECS**: CPU, Memory, Task Count
-- **RDS**: CPU, Memory, Connection Count, Read/Write Latency
-- **ElastiCache**: CPU, Memory, Cache Hits/Misses
-- **ALB**: Request Count, Response Time, Error Rate
-
-#### 8.1.2 알람
-
-- **High CPU Usage**: CPU > 80% 지속 5분
-- **High Memory Usage**: Memory > 85% 지속 5분
-- **Database Connection**: Connection Count > 80% 지속 5분
-- **Error Rate**: 4xx/5xx > 5% 지속 5분
-
-### 8.2 로깅
-
-- **CloudWatch Logs**: 애플리케이션 로그 수집
-- **Log Retention**: 30일
-- **Structured Logging**: JSON 형식
-
-## 9. 비용 최적화
-
-### 9.1 리소스 최적화
-
-- **Reserved Instances**: RDS 예약 인스턴스 (1년/3년)
-- **Spot Instances**: 개발 환경에서 사용 (옵션)
-- **Right Sizing**: 실제 사용량에 맞춘 인스턴스 크기
-
-### 9.2 예상 비용 (월간, 대략적)
-
-- **ECS Fargate**: $50 ~ $200 (트래픽에 따라)
-- **RDS Aurora**: $100 ~ $300
-- **ElastiCache**: $15 ~ $50
-- **ALB**: $20 ~ $30
-- **Data Transfer**: $10 ~ $50
-- **총 예상 비용**: $195 ~ $630/월
-
-## 10. 배포 전략
-
-### 10.1 CI/CD 파이프라인
-
-```
-GitHub/GitLab
-    ↓
-AWS CodePipeline
-    ↓
-AWS CodeBuild (빌드 및 테스트)
-    ↓
-Amazon ECR (컨테이너 이미지 저장)
-    ↓
-ECS Service Update (Blue/Green 배포)
-```
-
-### 10.2 배포 방식
-
-- **Blue/Green 배포**: 무중단 배포
-- **Rolling Update**: 점진적 업데이트
-- **Canary Deployment**: 일부 트래픽만 새 버전으로 (옵션)
-
-## 11. 대안 아키텍처
-
-### 11.1 서버리스 아키텍처 (옵션)
-
-- **API Gateway**: REST API 엔드포인트
-- **Lambda**: 비즈니스 로직 처리
-- **DynamoDB**: 데이터 저장 (옵션)
-- **장점**: 서버 관리 불필요, 자동 스케일링
-- **단점**: 콜드 스타트, 실행 시간 제한
-
-### 11.2 EKS (Kubernetes) 아키텍처 (옵션)
-
-- **EKS**: Kubernetes 클러스터
-- **장점**: 더 세밀한 제어, 오픈소스 생태계
-- **단점**: 관리 복잡도 증가
-
-## 12. 아키텍처 다이어그램 파일
-
-아키텍처 다이어그램은 다음 도구로 작성하여 `resource/` 폴더에 저장합니다:
-
-- **draw.io**: 온라인 다이어그램 도구
-- **Lucidchart**: 클라우드 기반 다이어그램 도구
-- **AWS Architecture Icons**: AWS 공식 아이콘 사용
-
-## 13. 다음 단계
+## 10. 다음 단계
 
 다음 단계에서는 테스트 전략을 설계하여 품질 보증 방법을 구체화할 예정입니다.
 
 ---
 
 **다음 문서**: [09. 테스트 전략](./09-테스트-전략.md)
-

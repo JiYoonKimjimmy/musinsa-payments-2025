@@ -1,9 +1,10 @@
 erDiagram
     Member ||--o{ PointAccumulation : "1:N"
     Member ||--o{ PointUsage : "1:N"
-    Member ||--o{ PointCancellation : "1:N"
+    Member ||--|| MemberPointBalance : "1:1"
     PointUsage ||--o{ PointUsageDetail : "1:N"
     PointAccumulation ||--o{ PointUsageDetail : "1:N"
+    PointConfig ||--o{ PointConfigHistory : "1:N"
     
     Member {
         bigint id PK "AUTO_INCREMENT"
@@ -57,13 +58,22 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
     
-    PointCancellation {
+    PointConfigHistory {
         bigint id PK "AUTO_INCREMENT"
-        varchar point_key UK "UNIQUE, NOT NULL"
-        varchar cancellation_type "NOT NULL"
-        varchar target_point_key "NOT NULL"
-        bigint member_id FK "NOT NULL"
-        decimal amount "NOT NULL, CHECK(amount > 0)"
-        varchar reason
+        varchar config_key FK "NOT NULL"
+        varchar old_value
+        varchar new_value "NOT NULL"
+        varchar changed_by
+        timestamp changed_at "NOT NULL"
+    }
+    
+    MemberPointBalance {
+        bigint member_id PK "NOT NULL, FK to Member"
+        decimal available_balance "NOT NULL, DEFAULT 0"
+        decimal total_accumulated "NOT NULL, DEFAULT 0"
+        decimal total_used "NOT NULL, DEFAULT 0"
+        decimal total_expired "NOT NULL, DEFAULT 0"
+        bigint version "NOT NULL, DEFAULT 0"
         timestamp created_at "NOT NULL"
+        timestamp updated_at "NOT NULL"
     }

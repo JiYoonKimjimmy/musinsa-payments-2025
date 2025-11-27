@@ -2,7 +2,7 @@
 
 ## 1. 개요
 
-무료 포인트 시스템의 데이터베이스 구조를 설계합니다. 1원 단위 추적, 만료일 관리, 수기 지급 구분 등의 요구사항을 반영합니다.
+무료 포인트 시스템의 데이터베이스 구조를 설계합니다. 1포인트 단위 추적, 만료일 관리, 수기 지급 구분 등의 요구사항을 반영합니다.
 
 ## 2. 엔티티 식별
 
@@ -23,17 +23,23 @@
 - 사용 건별로 고유한 pointKey를 가짐
 
 #### 2.1.4 PointUsageDetail (포인트 사용 상세)
-- 포인트 사용의 상세 내역을 1원 단위로 추적
+- 포인트 사용의 상세 내역을 1포인트 단위로 추적
 - 어떤 적립 건에서 얼마를 사용했는지 기록
-- 1원 단위 추적을 위한 필수 엔티티
+- 1포인트 단위 추적을 위한 필수 엔티티
 
 #### 2.1.5 PointConfig (포인트 설정)
 - 동적 설정을 관리하는 엔티티
 - 1회 최대 적립 금액, 개인별 최대 보유 금액, 기본 만료일 등
 
-#### 2.1.6 PointCancellation (포인트 취소)
-- 적립 취소 및 사용 취소 정보를 관리하는 엔티티
-- 취소 유형(적립 취소/사용 취소) 구분
+#### 2.1.6 PointConfigHistory (포인트 설정 변경 이력)
+- 포인트 설정 변경 이력을 추적하는 엔티티
+- 설정 변경 시 이전 값과 새로운 값을 기록
+- 변경자 정보 포함
+
+#### 2.1.7 MemberPointBalance (회원 포인트 잔액)
+- 회원별 포인트 잔액을 관리하는 캐시 테이블
+- 비동기 이벤트 기반으로 잔액을 관리
+- 사용 가능 잔액, 총 적립액, 총 사용액, 총 만료액 등 집계 정보 제공
 
 ### 2.2 포인트 적립과 사용 엔티티 분리 설계 원칙
 
@@ -72,14 +78,14 @@
 - 주문 단위로 취소 처리
 - 취소 조건: `remaining_amount >= cancel_amount`
 
-##### 3. 1원 단위 추적 요구사항
+##### 3. 1포인트 단위 추적 요구사항
 
-**요구사항**: "특정 시점에 적립된 포인트는 1원단위까지 어떤 주문에서 사용되었는지 추적할수 있어야 한다."
+**요구사항**: "특정 시점에 적립된 포인트는 1포인트 단위까지 어떤 주문에서 사용되었는지 추적할수 있어야 한다."
 
 **분리 설계의 장점**:
 - `PointAccumulation`: 적립 건 (예: A, B)
 - `PointUsage`: 사용 건 (예: C)
-- `PointUsageDetail`: 1원 단위 추적 (A에서 1000원, B에서 200원 사용)
+- `PointUsageDetail`: 1포인트 단위 추적 (A에서 1000포인트, B에서 200포인트 사용)
 
 **통합 설계의 문제점**:
 - 적립과 사용을 같은 레코드로 관리하면 추적 구조가 복잡해짐
@@ -151,7 +157,7 @@ ORDER BY is_manual_grant DESC, expiration_date ASC
    - 사용 취소 규칙: `PointUsage`에만 존재
    - 규칙이 명확히 분리됨
 
-3. **1원 단위 추적의 용이성**
+3. **1포인트 단위 추적의 용이성**
    - `PointUsageDetail`이 적립과 사용을 연결
    - 어떤 적립에서 얼마를 사용했는지 명확히 추적 가능
 
@@ -183,6 +189,7 @@ ORDER BY is_manual_grant DESC, expiration_date ASC
 **비고**:
 - member_no는 비즈니스 식별자로 사용
 - 실제 사용자 인증/인가는 별도 시스템으로 가정
+- **실제 구현 참고**: 현재 구현에서는 도메인 엔티티가 없고 memberId(Long)만 사용됩니다. 이 엔티티는 외래키 관계를 위한 참조용 엔티티입니다.
 
 ### 3.2 PointAccumulation (포인트 적립)
 
@@ -240,15 +247,15 @@ ORDER BY is_manual_grant DESC, expiration_date ASC
 | id | BIGINT | PK, AUTO_INCREMENT | 상세 ID |
 | point_usage_id | BIGINT | FK, NOT NULL | 포인트 사용 ID |
 | point_accumulation_id | BIGINT | FK, NOT NULL | 포인트 적립 ID |
-| amount | DECIMAL(10,0) | NOT NULL, CHECK(amount > 0) | 사용 금액 (1원 단위) |
+| amount | DECIMAL(10,0) | NOT NULL, CHECK(amount > 0) | 사용 금액 (1포인트 단위) |
 | cancelled_amount | DECIMAL(10,0) | NOT NULL, DEFAULT 0 | 취소된 금액 |
 | created_at | TIMESTAMP | NOT NULL | 생성일시 |
 | updated_at | TIMESTAMP | NOT NULL | 수정일시 |
 
 **비고**:
-- 1원 단위 추적을 위한 핵심 엔티티
+- 1포인트 단위 추적을 위한 핵심 엔티티
 - point_usage_id와 point_accumulation_id의 관계로 어떤 적립에서 얼마를 사용했는지 추적
-- amount는 1원 단위로 기록 가능
+- amount는 1포인트 단위로 기록 가능
 - cancelled_amount는 사용 취소 시 기록
 
 **인덱스**:
@@ -275,7 +282,49 @@ ORDER BY is_manual_grant DESC, expiration_date ASC
   - `MIN_EXPIRATION_DAYS`: 최소 만료일 (기본: 1)
   - `MAX_EXPIRATION_DAYS`: 최대 만료일 (기본: 1824, 약 5년)
 
-### 3.6 PointCancellation (포인트 취소)
+### 3.6 PointConfigHistory (포인트 설정 변경 이력)
+
+| 컬럼명 | 타입 | 제약조건 | 설명 |
+|--------|------|----------|------|
+| id | BIGINT | PK, AUTO_INCREMENT | 이력 ID |
+| config_key | VARCHAR(50) | FK, NOT NULL | 설정 키 |
+| old_value | VARCHAR(255) | | 이전 값 |
+| new_value | VARCHAR(255) | NOT NULL | 새로운 값 |
+| changed_by | VARCHAR(100) | | 변경한 사용자 |
+| changed_at | TIMESTAMP | NOT NULL | 변경일시 |
+
+**비고**:
+- 설정 변경 이력을 추적하기 위한 엔티티
+- config_key는 PointConfig.config_key를 참조
+- old_value는 최초 생성 시 NULL일 수 있음
+- changed_by는 변경자 추적용 (선택적)
+
+**인덱스**:
+- config_key - 설정별 이력 조회용
+- changed_at - 시간 범위 조회용
+
+### 3.7 MemberPointBalance (회원 포인트 잔액)
+
+| 컬럼명 | 타입 | 제약조건 | 설명 |
+|--------|------|----------|------|
+| member_id | BIGINT | PK, FK, NOT NULL | 사용자 ID |
+| available_balance | DECIMAL(15,0) | NOT NULL, DEFAULT 0 | 사용 가능 잔액 |
+| total_accumulated | DECIMAL(15,0) | NOT NULL, DEFAULT 0 | 총 적립액 |
+| total_used | DECIMAL(15,0) | NOT NULL, DEFAULT 0 | 총 사용액 |
+| total_expired | DECIMAL(15,0) | NOT NULL, DEFAULT 0 | 총 만료액 |
+| version | BIGINT | NOT NULL, DEFAULT 0 | 버전 (낙관적 잠금) |
+| created_at | TIMESTAMP | NOT NULL | 생성일시 |
+| updated_at | TIMESTAMP | NOT NULL | 수정일시 |
+
+**비고**:
+- 회원별 포인트 잔액을 관리하는 캐시 테이블
+- 비동기 이벤트 기반으로 잔액을 관리하므로 정합성 보정이 필요할 수 있음
+- version 필드는 낙관적 잠금(Optimistic Locking)을 위한 필드
+- member_id를 PK로 사용하여 회원당 하나의 잔액 레코드만 존재
+- 실제 잔액 검증은 서비스 레이어에서 수행되며, 캐시 불일치는 reconciliation 서비스에서 주기적으로 보정
+
+**인덱스**:
+- member_id (PK이므로 자동 인덱스)
 
 | 컬럼명 | 타입 | 제약조건 | 설명 |
 |--------|------|----------|------|
@@ -304,9 +353,10 @@ ORDER BY is_manual_grant DESC, expiration_date ASC
 ```
 Member (1) ────< (N) PointAccumulation
 Member (1) ────< (N) PointUsage
+Member (1) ────< (1) MemberPointBalance
 PointUsage (1) ────< (N) PointUsageDetail
 PointAccumulation (1) ────< (N) PointUsageDetail
-Member (1) ────< (N) PointCancellation
+PointConfig (1) ────< (N) PointConfigHistory
 ```
 
 ### 4.2 관계 상세
@@ -331,9 +381,15 @@ Member (1) ────< (N) PointCancellation
 - **외래키**: PointUsageDetail.point_accumulation_id → PointAccumulation.id
 - **CASCADE**: PointAccumulation 삭제 시 상세 내역 처리 정책 필요
 
-#### 4.2.5 Member ↔ PointCancellation
-- **관계**: 1:N (한 사용자는 여러 취소 건을 가짐)
-- **외래키**: PointCancellation.member_id → Member.id
+#### 4.2.5 Member ↔ MemberPointBalance
+- **관계**: 1:1 (한 사용자는 하나의 잔액 캐시를 가짐)
+- **외래키**: MemberPointBalance.member_id → Member.id
+- **특성**: 캐시 테이블이므로 CASCADE 정책은 제한적
+
+#### 4.2.6 PointConfig ↔ PointConfigHistory
+- **관계**: 1:N (한 설정은 여러 변경 이력을 가짐)
+- **외래키**: PointConfigHistory.config_key → PointConfig.config_key
+- **특성**: 이력 보존을 위한 관계
 
 ## 5. 제약조건 및 비즈니스 규칙
 
@@ -382,9 +438,10 @@ ORDER BY is_manual_grant DESC, expiration_date ASC
 
 - **Member ↔ PointAccumulation**: 1:N 관계 (한 사용자는 여러 적립 건을 가짐)
 - **Member ↔ PointUsage**: 1:N 관계 (한 사용자는 여러 사용 건을 가짐)
-- **Member ↔ PointCancellation**: 1:N 관계 (한 사용자는 여러 취소 건을 가짐)
+- **Member ↔ MemberPointBalance**: 1:1 관계 (한 사용자는 하나의 잔액 캐시를 가짐)
 - **PointUsage ↔ PointUsageDetail**: 1:N 관계 (한 사용 건은 여러 상세 내역을 가짐)
 - **PointAccumulation ↔ PointUsageDetail**: 1:N 관계 (한 적립 건은 여러 사용 상세 내역에 사용됨)
+- **PointConfig ↔ PointConfigHistory**: 1:N 관계 (한 설정은 여러 변경 이력을 가짐)
 
 ### 6.3 주요 인덱스
 
@@ -397,17 +454,19 @@ ORDER BY is_manual_grant DESC, expiration_date ASC
 - **PointUsageDetail**:
   - `point_usage_id` - 사용 건별 상세 조회용
   - `point_accumulation_id` - 적립 건별 사용 내역 조회용
-- **PointCancellation**:
-  - `target_point_key` - 대상 건별 취소 내역 조회용
-  - `member_id, cancellation_type` (복합 인덱스) - 사용자별 취소 내역 조회용
+- **PointConfigHistory**:
+  - `config_key` - 설정별 이력 조회용
+  - `changed_at` - 시간 범위 조회용
+- **MemberPointBalance**:
+  - `member_id` (PK이므로 자동 인덱스)
 
 ### 6.4 ERD 다이어그램 파일
 
 ERD 다이어그램 파일은 `resource/` 폴더에 저장되어 있습니다:
-- **Mermaid 소스 파일**: `resource/erd.mmd`
-- **PNG 이미지**: `resource/erd.png` (239KB)
-- **SVG 이미지**: `resource/erd.svg` (134KB, 벡터 이미지, 권장)
-- **PDF 문서**: `resource/erd.pdf` (84KB)
+- **Mermaid 소스 파일**: `resource/scripts/erd.mmd`
+- **PNG 이미지**: `resource/erd.png` (71KB)
+- **SVG 이미지**: `resource/erd.svg` (156KB, 벡터 이미지, 권장)
+- **PDF 문서**: `resource/erd.pdf` (91KB)
 - **이미지 변환 가이드**: `resource/README.md`
 
 #### Mermaid 이미지로 변환하기
@@ -432,6 +491,8 @@ mmdc -i erd.mmd -o erd.pdf    # PDF
 - **PointAccumulation**: member_id, status, expiration_date 복합 인덱스 (사용 우선순위 조회)
 - **PointUsage**: member_id, order_number 복합 인덱스 (사용자별 주문 조회)
 - **PointUsageDetail**: point_usage_id, point_accumulation_id 인덱스 (조인 성능)
+- **PointConfigHistory**: config_key, changed_at 인덱스 (설정별 이력 조회)
+- **MemberPointBalance**: member_id (PK이므로 자동 인덱스)
 
 ### 7.2 파티셔닝 고려
 - 대용량 데이터를 고려한 파티셔닝 전략 (옵션)
