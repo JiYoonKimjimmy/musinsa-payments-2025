@@ -26,7 +26,7 @@ class CoroutineConfig {
          * - 계산, 데이터 변환 등에 사용
          * - CPU 코어 수만큼 설정 (권장)
          */
-        private const val CPU_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors()
+        private val CPU_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors()
     }
 
     /**
