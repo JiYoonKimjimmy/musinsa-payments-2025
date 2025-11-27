@@ -1,5 +1,6 @@
 package com.musinsa.payments.point.application.service
 
+import com.musinsa.payments.point.application.port.output.event.fixtures.EventCapturingPublisher
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakeMemberPointBalancePersistencePort
 import com.musinsa.payments.point.domain.entity.MemberPointBalance
 import com.musinsa.payments.point.domain.event.BalanceReconciliationRequestEvent
@@ -9,7 +10,6 @@ import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.springframework.context.ApplicationEventPublisher
 
 /**
  * PointBalanceCacheUpdateService 단위 테스트
@@ -114,19 +114,3 @@ class PointBalanceCacheUpdateServiceTest : StringSpec({
         reconciliationEvent.reason shouldBe "캐시 업데이트 실패 (적립): DB 연결 실패"
     }
 })
-
-/**
- * 테스트용 이벤트 캡처 발행자
- */
-class EventCapturingPublisher : ApplicationEventPublisher {
-    val capturedEvents = mutableListOf<Any>()
-    
-    override fun publishEvent(event: Any) {
-        capturedEvents.add(event)
-    }
-    
-    fun clear() {
-        capturedEvents.clear()
-    }
-}
-
