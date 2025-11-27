@@ -8,18 +8,20 @@ import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.Dispatchers
 import java.time.LocalDate
 
 /**
  * PointBalanceReconciliationService 단위 테스트
  */
 class PointBalanceReconciliationServiceTest : StringSpec({
-    
+
     val memberPointBalancePersistencePort = FakeMemberPointBalancePersistencePort()
     val pointAccumulationPersistencePort = FakePointAccumulationPersistencePort()
     val service = PointBalanceReconciliationService(
         memberPointBalancePersistencePort,
-        pointAccumulationPersistencePort
+        pointAccumulationPersistencePort,
+        Dispatchers.Unconfined
     )
     
     "캐시된 잔액과 실제 잔액이 일치할 때 MATCHED 상태가 반환되어야 한다" {

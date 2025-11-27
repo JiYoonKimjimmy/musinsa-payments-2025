@@ -10,18 +10,20 @@ import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.Dispatchers
 import java.time.LocalDate
 
 /**
  * BalanceReconciliationEventHandler 단위 테스트
  */
 class BalanceReconciliationEventHandlerTest : StringSpec({
-    
+
     val memberPointBalancePersistencePort = FakeMemberPointBalancePersistencePort()
     val pointAccumulationPersistencePort = FakePointAccumulationPersistencePort()
     val reconciliationService = PointBalanceReconciliationService(
         memberPointBalancePersistencePort,
-        pointAccumulationPersistencePort
+        pointAccumulationPersistencePort,
+        Dispatchers.Unconfined
     )
     val handler = BalanceReconciliationEventHandler(reconciliationService)
 

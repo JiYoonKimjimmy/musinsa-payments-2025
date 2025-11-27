@@ -11,6 +11,7 @@ import com.musinsa.payments.point.domain.valueobject.OrderNumber
 import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.Dispatchers
 import org.springframework.data.domain.PageRequest
 import java.time.LocalDateTime
 
@@ -26,7 +27,9 @@ class PointQueryServiceTest : BehaviorSpec({
     val service = PointQueryService(
         pointAccumulationPersistencePort,
         pointUsagePersistencePort,
-        memberPointBalancePersistencePort
+        memberPointBalancePersistencePort,
+        Dispatchers.Unconfined,
+        Dispatchers.Unconfined
     )
     
     Given("사용 가능한 포인트 적립 내역이 있을 때") {

@@ -18,13 +18,14 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
+import kotlinx.coroutines.Dispatchers
 import java.time.LocalDate
 
 /**
  * PointAccumulationService 단위 테스트
  */
 class PointAccumulationServiceTest : BehaviorSpec({
-    
+
     val pointAccumulationPersistencePort = FakePointAccumulationPersistencePort()
     val pointConfigPort = FakePointConfigPort().apply { setupDefaultConfigs() }
     val pointConfigValidator = PointConfigValidator(pointConfigPort)
@@ -37,7 +38,8 @@ class PointAccumulationServiceTest : BehaviorSpec({
         pointAccumulationPersistencePort,
         pointConfigService,
         pointKeyGenerator,
-        pointBalanceEventPublisher
+        pointBalanceEventPublisher,
+        Dispatchers.Unconfined
     )
     
     Given("유효한 적립 요청이 있을 때") {
