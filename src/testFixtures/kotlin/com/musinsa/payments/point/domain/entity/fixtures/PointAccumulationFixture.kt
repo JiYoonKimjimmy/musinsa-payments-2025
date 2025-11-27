@@ -1,8 +1,10 @@
 package com.musinsa.payments.point.domain.entity.fixtures
 
 import com.musinsa.payments.point.domain.entity.PointAccumulation
+import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.domain.valueobject.Money
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * PointAccumulation 테스트 Fixture
@@ -46,15 +48,19 @@ object PointAccumulationFixture {
             "사용 가능한 금액은 적립 금액보다 클 수 없습니다."
         }
 
-        val accumulation = PointAccumulation(
+        val now = LocalDateTime.now()
+        return PointAccumulation.restore(
+            id = null,
             pointKey = pointKey,
             memberId = memberId,
             amount = Money.of(amount),
+            availableAmount = Money.of(availableAmount),
             expirationDate = expirationDate,
-            isManualGrant = isManualGrant
+            isManualGrant = isManualGrant,
+            status = PointAccumulationStatus.ACCUMULATED,
+            createdAt = now,
+            updatedAt = now
         )
-        accumulation.availableAmount = Money.of(availableAmount)
-        return accumulation
     }
 
     /**
@@ -62,7 +68,7 @@ object PointAccumulationFixture {
      * expirationDate가 과거인 적립 건을 생성합니다.
      *
      * 주의: PointAccumulation 생성자는 만료일 검증을 수행하므로,
-     * 일단 유효한 날짜로 생성한 후 expirationDate를 과거로 변경합니다.
+     * restore() 메서드를 사용하여 검증을 우회합니다.
      */
     fun createExpired(
         pointKey: String = "EXPIRED_KEY",
@@ -76,61 +82,20 @@ object PointAccumulationFixture {
             "사용 가능한 금액은 적립 금액보다 클 수 없습니다."
         }
 
-        // 일단 유효한 날짜로 생성
-        val accumulation = PointAccumulation(
+        val now = LocalDateTime.now()
+        val expiredDate = LocalDate.now().minusDays(daysAgo)
+        
+        return PointAccumulation.restore(
+            id = null,
             pointKey = pointKey,
             memberId = memberId,
             amount = Money.of(amount),
-            expirationDate = LocalDate.now().plusDays(1),
-            isManualGrant = isManualGrant
-        )
-
-        // availableAmount 설정
-        accumulation.availableAmount = Money.of(availableAmount)
-
-        // 만료일을 과거로 변경
-        accumulation.expirationDate = LocalDate.now().minusDays(daysAgo)
-
-        return accumulation
-    }
-
-    /**
-     * 수기 지급 포인트 적립 생성
-     * isManualGrant가 true인 적립 건을 생성합니다.
-     */
-    fun createManualGrant(
-        pointKey: String = "MANUAL_KEY",
-        memberId: Long = 1L,
-        amount: Long = 5000L,
-        expirationDate: LocalDate = LocalDate.now().plusDays(365)
-    ): PointAccumulation {
-        return create(
-            pointKey = pointKey,
-            memberId = memberId,
-            amount = amount,
-            expirationDate = expirationDate,
-            isManualGrant = true
-        )
-    }
-
-    /**
-     * 전액 소진된 포인트 적립 생성
-     * availableAmount가 0인 적립 건을 생성합니다.
-     */
-    fun createFullyUsed(
-        pointKey: String = "FULLY_USED_KEY",
-        memberId: Long = 1L,
-        amount: Long = 10000L,
-        expirationDate: LocalDate = LocalDate.now().plusDays(365),
-        isManualGrant: Boolean = false
-    ): PointAccumulation {
-        return createPartiallyUsed(
-            pointKey = pointKey,
-            memberId = memberId,
-            amount = amount,
-            availableAmount = 0L,
-            expirationDate = expirationDate,
-            isManualGrant = isManualGrant
+            availableAmount = Money.of(availableAmount),
+            expirationDate = expiredDate,
+            isManualGrant = isManualGrant,
+            status = PointAccumulationStatus.ACCUMULATED,
+            createdAt = now,
+            updatedAt = now
         )
     }
 

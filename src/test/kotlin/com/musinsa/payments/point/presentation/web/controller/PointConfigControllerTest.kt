@@ -89,7 +89,6 @@ class PointConfigControllerTest : BehaviorSpec({
     Given("설정 업데이트 API") {
         When("유효한 요청으로 업데이트하면") {
             val config = PointConfig("MAX_ACCUMULATION_AMOUNT_PER_TIME", "200000", "1회 최대 적립 금액 (업데이트)")
-            config.updatedAt = LocalDateTime.now()
             
             val request = mapOf(
                 "configValue" to "200000",

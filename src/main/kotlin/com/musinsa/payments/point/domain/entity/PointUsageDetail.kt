@@ -9,35 +9,26 @@ import java.time.LocalDateTime
  * 적립 건별로 포인트 사용을 1원 단위 정확도로 추적합니다.
  * 어떤 적립 건에서 얼마를 사용했는지 상세히 기록합니다.
  */
-class PointUsageDetail {
-    var id: Long? = null              // 엔티티 생성 시점에는 null, 저장 후에는 항상 값 존재
-    var pointUsageId: Long            // 포인트 사용 ID, 필수
-    var pointAccumulationId: Long     // 포인트 적립 ID, 필수
-    var amount: Money                 // 적립 건에서 실제 사용된 금액, 필수
-    var cancelledAmount: Money        // 취소된 금액, 필수 (기본값 Money.ZERO)
-    var createdAt: LocalDateTime      // 생성일시, 필수
-    var updatedAt: LocalDateTime      // 수정일시, 필수
+class PointUsageDetail(
+    var id: Long? = null,
+    val pointUsageId: Long,
+    val pointAccumulationId: Long,
+    val amount: Money,
+    cancelledAmount: Money = Money.ZERO,
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    updatedAt: LocalDateTime = LocalDateTime.now()
+) {
+    var cancelledAmount: Money = cancelledAmount
+        private set
+    var updatedAt: LocalDateTime = updatedAt
+        private set
     
-    constructor(
-        pointUsageId: Long,
-        pointAccumulationId: Long,
-        amount: Money,
-        cancelledAmount: Money = Money.ZERO,
-        createdAt: LocalDateTime = LocalDateTime.now(),
-        updatedAt: LocalDateTime = LocalDateTime.now()
-    ) {
+    init {
         require(pointUsageId > 0) { "포인트 사용 ID는 0보다 커야 합니다." }
         require(pointAccumulationId > 0) { "포인트 적립 ID는 0보다 커야 합니다." }
         require(amount.isGreaterThan(Money.ZERO)) { "사용 금액은 0보다 커야 합니다." }
         require(cancelledAmount.isGreaterThanOrEqual(Money.ZERO)) { "취소 금액은 0 이상이어야 합니다." }
         require(cancelledAmount.isLessThanOrEqual(amount)) { "취소 금액은 사용 금액을 초과할 수 없습니다." }
-        
-        this.pointUsageId = pointUsageId
-        this.pointAccumulationId = pointAccumulationId
-        this.amount = amount
-        this.cancelledAmount = cancelledAmount
-        this.createdAt = createdAt
-        this.updatedAt = updatedAt
     }
     
     /**

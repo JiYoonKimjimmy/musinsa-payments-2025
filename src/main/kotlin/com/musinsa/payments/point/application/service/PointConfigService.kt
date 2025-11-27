@@ -112,7 +112,7 @@ class PointConfigService(
         // 설정 업데이트
         config.updateConfigValue(configValue)
         if (description != null) {
-            config.description = description
+            config.setDescription(description)
         }
         
         // 저장

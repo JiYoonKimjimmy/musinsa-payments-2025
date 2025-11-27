@@ -11,78 +11,45 @@ import java.time.LocalDateTime
  * 포인트 적립 도메인 엔티티
  * 포인트 적립 정보와 비즈니스 로직을 관리합니다.
  */
-class PointAccumulation {
+class PointAccumulation(
+    val pointKey: String,
+    val memberId: Long,
+    val amount: Money,
+    expirationDate: LocalDate,
+    isManualGrant: Boolean = false,
+    status: PointAccumulationStatus = PointAccumulationStatus.ACCUMULATED,
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    updatedAt: LocalDateTime = LocalDateTime.now(),
+    skipValidation: Boolean = false  // restore() 메서드에서 검증을 우회하기 위한 플래그
+) {
     var id: Long? = null                      // 엔티티 생성 시점에는 null, 저장 후에는 항상 값 존재
-    var pointKey: String                      // 비즈니스 식별자, 필수
-    var memberId: Long                        // 사용자 ID, 필수
-    var amount: Money                         // 적립 금액, 필수
-    var availableAmount: Money                // 사용 가능 잔액, 필수
-    var expirationDate: LocalDate             // 만료일, 필수
-    var isManualGrant: Boolean = false        // 수기 지급 여부, 기본값 false
-    var status: PointAccumulationStatus       // 상태, 필수
-    var createdAt: LocalDateTime              // 생성일시, 필수
-    var updatedAt: LocalDateTime              // 수정일시, 필수
+    var availableAmount: Money = amount         // 사용 가능 잔액, 필수 (초기값은 적립 금액과 동일)
+        private set
+    var expirationDate: LocalDate = expirationDate
+        private set
+    var isManualGrant: Boolean = isManualGrant
+        private set
+    var status: PointAccumulationStatus = status
+        private set
+    var updatedAt: LocalDateTime = updatedAt
+        private set
     
-    constructor(
-        pointKey: String,
-        memberId: Long,
-        amount: Money,
-        expirationDate: LocalDate,
-        isManualGrant: Boolean = false,
-        status: PointAccumulationStatus = PointAccumulationStatus.ACCUMULATED,
-        createdAt: LocalDateTime = LocalDateTime.now(),
-        updatedAt: LocalDateTime = LocalDateTime.now()
-    ) {
-        require(pointKey.isNotBlank()) { "포인트 키는 필수입니다." }
-        require(memberId > 0) { "사용자 ID는 0보다 커야 합니다." }
-        require(amount.isGreaterThan(Money.ZERO)) { "적립 금액은 0보다 커야 합니다." }
-        require(expirationDate.isAfter(LocalDate.now()) || expirationDate.isEqual(LocalDate.now())) {
-            "만료일은 오늘 이후여야 합니다."
+    init {
+        if (!skipValidation) {
+            require(pointKey.isNotBlank()) { "포인트 키는 필수입니다." }
+            require(memberId > 0) { "사용자 ID는 0보다 커야 합니다." }
+            require(amount.isGreaterThan(Money.ZERO)) { "적립 금액은 0보다 커야 합니다." }
+            require(expirationDate.isAfter(LocalDate.now()) || expirationDate.isEqual(LocalDate.now())) {
+                "만료일은 오늘 이후여야 합니다."
+            }
         }
-        
-        this.pointKey = pointKey
-        this.memberId = memberId
-        this.amount = amount
-        this.availableAmount = amount  // 초기값은 적립 금액과 동일
-        this.expirationDate = expirationDate
-        this.isManualGrant = isManualGrant
-        this.status = status
-        this.createdAt = createdAt
-        this.updatedAt = updatedAt
-    }
-    
-    /**
-     * 이미 저장된 엔티티를 위한 생성자 (만료일 검증 없음)
-     * Entity Mapper에서 사용하기 위한 내부 생성자입니다.
-     */
-    private constructor(
-        id: Long?,
-        pointKey: String,
-        memberId: Long,
-        amount: Money,
-        availableAmount: Money,
-        expirationDate: LocalDate,
-        isManualGrant: Boolean,
-        status: PointAccumulationStatus,
-        createdAt: LocalDateTime,
-        updatedAt: LocalDateTime
-    ) {
-        this.id = id
-        this.pointKey = pointKey
-        this.memberId = memberId
-        this.amount = amount
-        this.availableAmount = availableAmount
-        this.expirationDate = expirationDate
-        this.isManualGrant = isManualGrant
-        this.status = status
-        this.createdAt = createdAt
-        this.updatedAt = updatedAt
     }
     
     companion object {
         /**
          * 이미 저장된 엔티티를 복원하기 위한 팩토리 메서드
          * Entity Mapper에서 사용합니다.
+         * 만료일 검증을 우회하기 위해 skipValidation = true를 사용합니다.
          */
         fun restore(
             id: Long?,
@@ -96,18 +63,20 @@ class PointAccumulation {
             createdAt: LocalDateTime,
             updatedAt: LocalDateTime
         ): PointAccumulation {
-            return PointAccumulation(
-                id = id,
+            val accumulation = PointAccumulation(
                 pointKey = pointKey,
                 memberId = memberId,
                 amount = amount,
-                availableAmount = availableAmount,
                 expirationDate = expirationDate,
                 isManualGrant = isManualGrant,
                 status = status,
                 createdAt = createdAt,
-                updatedAt = updatedAt
+                updatedAt = updatedAt,
+                skipValidation = true  // 검증 우회
             )
+            accumulation.id = id
+            accumulation.availableAmount = availableAmount
+            return accumulation
         }
     }
     

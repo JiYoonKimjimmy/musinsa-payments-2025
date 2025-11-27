@@ -13,27 +13,19 @@ class MemberPointBalance(
     totalAccumulated: Money = Money.ZERO,
     totalUsed: Money = Money.ZERO,
     totalExpired: Money = Money.ZERO,
-    createdAt: LocalDateTime = LocalDateTime.now(),
+    val createdAt: LocalDateTime = LocalDateTime.now(),
     updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
     var availableBalance: Money = availableBalance
         private set
-    
     var totalAccumulated: Money = totalAccumulated
         private set
-    
     var totalUsed: Money = totalUsed
         private set
-    
     var totalExpired: Money = totalExpired
         private set
-    
-    var createdAt: LocalDateTime = createdAt
-        private set
-    
     var updatedAt: LocalDateTime = updatedAt
         private set
-    
     var version: Long = 0
     
     /**
