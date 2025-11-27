@@ -104,10 +104,10 @@ class PointReconciliationController(
         ]
     )
     @PostMapping("/all")
-    fun reconcileAllBalances(): BaseResponse<ReconciliationSummaryResponse> {
+    suspend fun reconcileAllBalances(): BaseResponse<ReconciliationSummaryResponse> {
         val results = pointBalanceReconciliationService.reconcileAllBalances()
         val response = ReconciliationSummaryResponse.from(results)
-        
+
         val message = buildString {
             append("정합성 검증 완료. ")
             append("총 ${response.totalChecked}건 검사, ")
@@ -116,7 +116,7 @@ class PointReconciliationController(
             append("${response.createdCount}건 신규 생성, ")
             append("${response.skippedCount}건 건너뜀.")
         }
-        
+
         return BaseResponse.success(response, message)
     }
 }

@@ -54,7 +54,7 @@ class PointAccumulationController(
         ]
     )
     @PostMapping
-    fun accumulate(
+    suspend fun accumulate(
         @Valid @RequestBody request: AccumulatePointRequest
     ): BaseResponse<AccumulatePointResponse> {
         val accumulation = pointAccumulationUseCase.accumulate(
@@ -63,7 +63,7 @@ class PointAccumulationController(
             expirationDays = request.expirationDays,
             isManualGrant = request.isManualGrant
         )
-        
+
         val response = PointDtoMapper.toAccumulatePointResponse(accumulation)
         return BaseResponse.success(response, "포인트가 성공적으로 적립되었습니다.")
     }
@@ -99,7 +99,7 @@ class PointAccumulationController(
         ]
     )
     @PostMapping("/{pointKey}/cancel")
-    fun cancelAccumulation(
+    suspend fun cancelAccumulation(
         @Parameter(description = "취소할 적립 건의 포인트 키", required = true)
         @PathVariable pointKey: String,
         @Valid @RequestBody request: CancelAccumulationRequest
@@ -108,7 +108,7 @@ class PointAccumulationController(
             pointKey = pointKey,
             reason = request.reason
         )
-        
+
         val response = PointDtoMapper.toCancelAccumulationResponse(accumulation)
         return BaseResponse.success(response, "포인트 적립이 성공적으로 취소되었습니다.")
     }

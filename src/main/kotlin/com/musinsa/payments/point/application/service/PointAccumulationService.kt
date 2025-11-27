@@ -11,6 +11,10 @@ import com.musinsa.payments.point.domain.exception.InvalidExpirationDateExceptio
 import com.musinsa.payments.point.domain.exception.MaxAccumulationExceededException
 import com.musinsa.payments.point.domain.exception.MaxBalanceExceededException
 import com.musinsa.payments.point.domain.valueobject.Money
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -18,6 +22,10 @@ import java.time.LocalDate
 /**
  * 포인트 적립 서비스
  * PointAccumulationUseCase 인터페이스를 구현합니다.
+ *
+ * 성능 최적화:
+ * - 코루틴을 사용한 병렬 검증 처리
+ * - 독립적인 설정값 조회 및 잔액 조회를 동시 실행
  */
 @Transactional
 @Service
@@ -25,7 +33,8 @@ class PointAccumulationService(
     private val pointAccumulationPersistencePort: PointAccumulationPersistencePort,
     private val pointConfigService: PointConfigService,
     private val pointKeyGenerator: PointKeyGenerator,
-    private val pointBalanceEventPublisher: PointBalanceEventPublisher
+    private val pointBalanceEventPublisher: PointBalanceEventPublisher,
+    @Qualifier("ioDispatcher") private val ioDispatcher: CoroutineDispatcher
 ) : PointAccumulationUseCase {
     
     companion object {
@@ -36,38 +45,53 @@ class PointAccumulationService(
         private const val MAX_EXPIRATION_DAYS = "MAX_EXPIRATION_DAYS"
     }
 
-    override fun accumulate(
+    override suspend fun accumulate(
         memberId: Long,
         amount: Long,
         expirationDays: Int?,
         isManualGrant: Boolean
-    ): PointAccumulation {
+    ): PointAccumulation = coroutineScope {
         // 적립 금액 검증
         val moneyAmount = Money.of(amount)
         if (moneyAmount.isLessThanOrEqual(Money.ZERO)) {
             throw InvalidAmountException("적립 금액은 0보다 커야 합니다.")
         }
-        
+
+        // 독립적인 검증 데이터를 병렬로 조회
+        val maxAccumulationAmountDeferred = async(ioDispatcher) {
+            getConfigLongValue(MAX_ACCUMULATION_AMOUNT_PER_TIME)
+        }
+
+        val currentBalanceDeferred = async(ioDispatcher) {
+            pointAccumulationPersistencePort.sumAvailableAmountByMemberId(memberId).toLong()
+        }
+
+        val maxBalanceDeferred = async(ioDispatcher) {
+            getConfigLongValue(MAX_BALANCE_PER_MEMBER)
+        }
+
+        // 병렬 조회 결과 대기
+        val maxAccumulationAmount = maxAccumulationAmountDeferred.await()
+        val currentBalance = currentBalanceDeferred.await()
+        val maxBalance = maxBalanceDeferred.await()
+
         // 최대 적립 금액 검증
-        val maxAccumulationAmount = getConfigLongValue(MAX_ACCUMULATION_AMOUNT_PER_TIME)
         if (amount > maxAccumulationAmount) {
             throw MaxAccumulationExceededException("1회 최대 적립 금액(${maxAccumulationAmount}원)을 초과했습니다. 요청 금액: ${amount}원")
         }
-        
+
         // 최대 보유 금액 검증
-        val currentBalance = pointAccumulationPersistencePort.sumAvailableAmountByMemberId(memberId).toLong()
-        val maxBalance = getConfigLongValue(MAX_BALANCE_PER_MEMBER)
         if (currentBalance + amount > maxBalance) {
             throw MaxBalanceExceededException()
         }
-        
+
         // 만료일 계산 및 검증
         val expirationDate = calculateExpirationDate(expirationDays)
         validateExpirationDate(expirationDate)
-        
+
         // 포인트 키 생성
         val pointKey = pointKeyGenerator.generate().value
-        
+
         // 포인트 적립 엔티티 생성
         val accumulation = PointAccumulation(
             pointKey = pointKey,
@@ -76,10 +100,10 @@ class PointAccumulationService(
             expirationDate = expirationDate,
             isManualGrant = isManualGrant
         )
-        
+
         // 저장
         val saved = pointAccumulationPersistencePort.save(accumulation)
-        
+
         // 잔액 업데이트 이벤트 발행
         pointBalanceEventPublisher.publish(
             PointBalanceEvent.Accumulated(
@@ -88,27 +112,27 @@ class PointAccumulationService(
                 pointKey = pointKey
             )
         )
-        
-        return saved
+
+        saved
     }
 
-    override fun cancelAccumulation(
+    override suspend fun cancelAccumulation(
         pointKey: String,
         reason: String?
     ): PointAccumulation {
         // 적립 건 조회
         val accumulation = pointAccumulationPersistencePort.findByPointKey(pointKey)
             .orElseThrow { IllegalArgumentException("포인트 적립 건을 찾을 수 없습니다: $pointKey") }
-        
+
         // 취소할 금액 (사용 가능 잔액)
         val cancelAmount = accumulation.availableAmount
-        
+
         // 적립 취소 처리
         accumulation.cancel()
-        
+
         // 저장
         val saved = pointAccumulationPersistencePort.save(accumulation)
-        
+
         // 잔액 업데이트 이벤트 발행 (취소 금액이 있는 경우에만)
         if (cancelAmount.isGreaterThan(Money.ZERO)) {
             pointBalanceEventPublisher.publish(
@@ -119,7 +143,7 @@ class PointAccumulationService(
                 )
             )
         }
-        
+
         return saved
     }
     

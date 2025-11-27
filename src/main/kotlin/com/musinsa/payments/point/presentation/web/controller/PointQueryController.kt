@@ -48,12 +48,12 @@ class PointQueryController(
         ]
     )
     @GetMapping("/balance/{memberId}")
-    fun getBalance(
+    suspend fun getBalance(
         @Parameter(description = "회원 ID", required = true)
         @PathVariable memberId: Long
     ): BaseResponse<PointBalanceResponse> {
         val balanceResult = pointQueryUseCase.getBalance(memberId)
-        
+
         val response = PointDtoMapper.toPointBalanceResponse(
             memberId = balanceResult.memberId,
             totalBalance = balanceResult.totalBalance,
@@ -61,7 +61,7 @@ class PointQueryController(
             expiredBalance = balanceResult.expiredBalance,
             accumulations = balanceResult.accumulations
         )
-        
+
         return BaseResponse.success(response, "포인트 잔액 조회가 완료되었습니다.")
     }
     
@@ -86,7 +86,7 @@ class PointQueryController(
         ]
     )
     @GetMapping("/history/{memberId}")
-    fun getUsageHistory(
+    suspend fun getUsageHistory(
         @Parameter(description = "회원 ID", required = true)
         @PathVariable memberId: Long,
         @Parameter(description = "주문번호 (옵션, 필터링용)")
@@ -102,7 +102,7 @@ class PointQueryController(
             orderNumber = orderNumber,
             pageable = pageable
         )
-        
+
         val response = PointDtoMapper.toPointUsageHistoryResponse(usagePage)
         return BaseResponse.success(response, "포인트 사용 내역 조회가 완료되었습니다.")
     }

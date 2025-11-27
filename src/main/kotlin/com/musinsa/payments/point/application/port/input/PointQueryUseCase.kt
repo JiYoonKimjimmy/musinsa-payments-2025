@@ -11,14 +11,14 @@ import org.springframework.data.domain.Pageable
  * Presentation 레이어에서 이 인터페이스를 호출합니다.
  */
 interface PointQueryUseCase {
-    
+
     /**
      * 포인트 잔액 조회
      * @param memberId 회원 ID
      * @return 포인트 적립 엔티티 목록 (잔액 계산에 사용)
      */
-    fun getBalance(memberId: Long): PointBalanceResult
-    
+    suspend fun getBalance(memberId: Long): PointBalanceResult
+
     /**
      * 포인트 사용 내역 조회
      * @param memberId 회원 ID
@@ -26,7 +26,7 @@ interface PointQueryUseCase {
      * @param pageable 페이징 정보
      * @return 포인트 사용 엔티티 페이지
      */
-    fun getUsageHistory(
+    suspend fun getUsageHistory(
         memberId: Long,
         orderNumber: String? = null,
         pageable: Pageable
