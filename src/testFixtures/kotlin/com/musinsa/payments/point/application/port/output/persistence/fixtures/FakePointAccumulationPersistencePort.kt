@@ -5,6 +5,7 @@ import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.domain.valueobject.Money
 import java.time.LocalDate
+import java.util.Optional
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -34,12 +35,12 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
         return accumulations.map { save(it) }
     }
     
-    override fun findById(id: Long): java.util.Optional<PointAccumulation> {
-        return java.util.Optional.ofNullable(storageById[id])
+    override fun findById(id: Long): Optional<PointAccumulation> {
+        return Optional.ofNullable(storageById[id])
     }
     
-    override fun findByPointKey(pointKey: String): java.util.Optional<PointAccumulation> {
-        return java.util.Optional.ofNullable(storageByPointKey[pointKey])
+    override fun findByPointKey(pointKey: String): Optional<PointAccumulation> {
+        return Optional.ofNullable(storageByPointKey[pointKey])
     }
     
     override fun findByMemberIdAndStatus(
@@ -79,7 +80,7 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
             }
     }
 
-    override fun findByIdWithLock(id: Long): java.util.Optional<PointAccumulation> {
+    override fun findByIdWithLock(id: Long): Optional<PointAccumulation> {
         // Fake 구현: 실제 락 없이 기존 메서드 재사용
         return findById(id)
     }

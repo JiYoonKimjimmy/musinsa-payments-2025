@@ -7,9 +7,11 @@ import com.musinsa.payments.point.application.port.output.fixtures.FakePointKeyG
 import com.musinsa.payments.point.application.port.output.persistence.fixtures.FakePointAccumulationPersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
+import com.musinsa.payments.point.domain.exception.CannotCancelAccumulationException
 import com.musinsa.payments.point.domain.exception.InvalidExpirationDateException
 import com.musinsa.payments.point.domain.exception.MaxAccumulationExceededException
 import com.musinsa.payments.point.domain.exception.MaxBalanceExceededException
+import com.musinsa.payments.point.domain.valueobject.Money
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
@@ -29,20 +31,13 @@ class PointAccumulationServiceTest : BehaviorSpec({
     val pointConfigService = PointConfigService(pointConfigPort, pointConfigValidator, pointConfigHistoryPort)
     val pointKeyGenerator = FakePointKeyGenerator()
     val pointBalanceEventPublisher = FakePointBalanceEventPublisher()
+
     val service = PointAccumulationService(
         pointAccumulationPersistencePort,
         pointConfigService,
         pointKeyGenerator,
         pointBalanceEventPublisher
     )
-
-    beforeEach {
-        pointAccumulationPersistencePort.clear()
-        pointKeyGenerator.resetCounter()
-        pointConfigPort.resetToDefaults()
-        pointConfigHistoryPort.clear()
-        pointBalanceEventPublisher.clear()
-    }
     
     Given("유효한 적립 요청이 있을 때") {
         val memberId = 1L
@@ -155,7 +150,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("취소 가능한 적립 건이 있을 때") {
-        val pointKey = "TEST1234"
+        val pointKey = pointKeyGenerator.generate().value
         val memberId = 1L
         val amount = 10000L
 
@@ -172,6 +167,31 @@ class PointAccumulationServiceTest : BehaviorSpec({
 
             Then("적립 상태가 CANCELLED로 변경되어야 한다") {
                 result.status shouldBe PointAccumulationStatus.CANCELLED
+            }
+        }
+    }
+    
+    Given("일부라도 사용된 적립 건이 있을 때") {
+        val pointKey = pointKeyGenerator.generate().value
+        val memberId = 1L
+        val amount = 10000L
+        val usedAmount = 3000L // 일부 사용
+
+        When("적립을 취소하면") {
+            // 테스트 데이터 저장 (일부 사용된 적립)
+            val accumulation = PointAccumulationFixture.create(
+                pointKey = pointKey,
+                memberId = memberId,
+                amount = amount
+            )
+            accumulation.use(Money.of(usedAmount)) // 일부 사용 처리
+
+            Then("CannotCancelAccumulationException이 발생해야 한다") {
+                pointAccumulationPersistencePort.save(accumulation)
+
+                shouldThrow<CannotCancelAccumulationException> {
+                    service.cancelAccumulation(pointKey)
+                }
             }
         }
     }

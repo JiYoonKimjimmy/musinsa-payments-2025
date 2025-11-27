@@ -43,14 +43,6 @@ class FakePointUsageDetailPersistencePort(
         // usagePersistencePort가 없으면 인덱스 사용
         return storageByUsagePointKey[pointKey] ?: emptyList()
     }
-
-    /**
-     * 테스트 헬퍼: Usage PointKey와 상세 내역을 매핑
-     * saveAll 후에 호출하여 인덱스를 업데이트해야 함
-     */
-    fun indexByUsagePointKey(pointKey: String, details: List<PointUsageDetail>) {
-        storageByUsagePointKey[pointKey] = details.toMutableList()
-    }
     
     override fun findByAccumulationPointKey(pointKey: String): List<PointUsageDetail> {
         // 테스트에서 사용하지 않으므로 간단하게 구현

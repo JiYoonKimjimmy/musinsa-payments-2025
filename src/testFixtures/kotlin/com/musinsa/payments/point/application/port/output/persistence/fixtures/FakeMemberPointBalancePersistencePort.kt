@@ -41,12 +41,5 @@ class FakeMemberPointBalancePersistencePort : MemberPointBalancePersistencePort 
     fun clear() {
         storage.clear()
     }
-    
-    /**
-     * 저장된 잔액 개수 조회
-     */
-    fun count(): Int {
-        return storage.size
-    }
 }
 
