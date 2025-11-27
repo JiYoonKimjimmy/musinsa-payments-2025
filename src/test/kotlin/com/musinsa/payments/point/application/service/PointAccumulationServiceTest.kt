@@ -12,6 +12,7 @@ import com.musinsa.payments.point.domain.exception.InvalidExpirationDateExceptio
 import com.musinsa.payments.point.domain.exception.MaxAccumulationExceededException
 import com.musinsa.payments.point.domain.exception.MaxBalanceExceededException
 import com.musinsa.payments.point.domain.valueobject.Money
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
@@ -40,7 +41,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     )
     
     Given("유효한 적립 요청이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 10000L
         
         When("포인트를 적립하면") {
@@ -58,7 +59,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("수기 지급 포인트 적립 요청이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 5000L
         
         When("수기 지급으로 포인트를 적립하면") {
@@ -71,7 +72,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("최대 적립 금액을 초과하는 적립 요청이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 200000L // 최대값 100000 초과
 
         When("포인트를 적립하면") {
@@ -84,7 +85,8 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("최대 보유 금액을 초과하는 적립 요청이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val existingPointKey = TestDataGenerator.randomPointKey()
         val currentBalance = 9950000L // 현재 잔액
         val amount = 60000L // 적립 금액 (9950000 + 60000 = 10010000 > 10000000)
 
@@ -92,7 +94,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
             Then("MaxBalanceExceededException이 발생해야 한다") {
                 // 기존 적립 데이터 저장
                 val existingAccumulation = PointAccumulationFixture.create(
-                    pointKey = "EXISTING",
+                    pointKey = existingPointKey,
                     memberId = memberId,
                     amount = currentBalance
                 )
@@ -107,7 +109,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("사용자 지정 만료일이 있는 적립 요청이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 10000L
         val expirationDays = 180
 
@@ -122,7 +124,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("만료일이 최소값보다 작은 적립 요청이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 10000L
         val expirationDays = 0 // 최소값 1보다 작음
 
@@ -136,7 +138,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("만료일이 최대값보다 큰 적립 요청이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 10000L
         val expirationDays = 2000 // 최대값 1824보다 큼
 
@@ -150,8 +152,8 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("취소 가능한 적립 건이 있을 때") {
-        val pointKey = pointKeyGenerator.generate().value
-        val memberId = 1L
+        val pointKey = TestDataGenerator.randomPointKey()
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 10000L
 
         When("적립을 취소하면") {
@@ -172,8 +174,8 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("일부라도 사용된 적립 건이 있을 때") {
-        val pointKey = pointKeyGenerator.generate().value
-        val memberId = 1L
+        val pointKey = TestDataGenerator.randomPointKey()
+        val memberId = TestDataGenerator.randomMemberId()
         val amount = 10000L
         val usedAmount = 3000L // 일부 사용
 
@@ -197,7 +199,7 @@ class PointAccumulationServiceTest : BehaviorSpec({
     }
     
     Given("존재하지 않는 적립 건 키가 있을 때") {
-        val pointKey = "NOTFOUND"
+        val pointKey = TestDataGenerator.randomPointKey()
         
         When("적립을 취소하면") {
             Then("IllegalArgumentException이 발생해야 한다") {

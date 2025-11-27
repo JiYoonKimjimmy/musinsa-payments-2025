@@ -4,6 +4,7 @@ import com.musinsa.payments.point.application.port.input.PointAccumulationUseCas
 import com.musinsa.payments.point.application.port.input.PointQueryUseCase
 import com.musinsa.payments.point.application.port.input.PointUsageUseCase
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.extensions.spring.SpringExtension
 import io.kotest.matchers.collections.shouldHaveSize
@@ -23,8 +24,8 @@ import org.springframework.transaction.annotation.Transactional
  * 3. 주문번호 A1234에서 1200원 사용 (pointKey: C)
  * 4. 검증: 총 잔액 300원, A에서 1000원 사용, B에서 200원 사용
  */
-@Transactional
 @ActiveProfiles("test")
+@Transactional
 @SpringBootTest
 class Scenario1BasicAccumulationAndUsageTest @Autowired constructor(
     private val pointAccumulationUseCase: PointAccumulationUseCase,
@@ -35,7 +36,8 @@ class Scenario1BasicAccumulationAndUsageTest @Autowired constructor(
     extensions(SpringExtension)
     
     "시나리오 1: 기본 적립 및 사용이 정상적으로 동작해야 한다" {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         
         // 1. 1000원 적립 (pointKey: A)
         val accumulationA = pointAccumulationUseCase.accumulate(
@@ -80,16 +82,16 @@ class Scenario1BasicAccumulationAndUsageTest @Autowired constructor(
         balanceAfterB.availableBalance shouldBe 1500L
         balanceAfterB.accumulations shouldHaveSize 2
         
-        // 3. 주문번호 A1234에서 1200원 사용 (pointKey: C)
+        // 3. 주문번호에서 1200원 사용 (pointKey: C)
         val usage = pointUsageUseCase.use(
             memberId = memberId,
-            orderNumber = "A1234",
+            orderNumber = orderNumber,
             amount = 1200L
         )
         
         usage.pointKey shouldNotBe null
         usage.memberId shouldBe memberId
-        usage.orderNumber.value shouldBe "A1234"
+        usage.orderNumber.value shouldBe orderNumber
         usage.totalAmount.toLong() shouldBe 1200L
         
         // pointKeyC는 검증에 사용되지 않으므로 주석 처리
@@ -117,7 +119,8 @@ class Scenario1BasicAccumulationAndUsageTest @Autowired constructor(
     }
     
     "시나리오 1 확장: 여러 적립 건에서 순차적으로 사용할 때 우선순위가 올바르게 적용되어야 한다" {
-        val memberId = 2L
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         
         // 수기 지급 포인트 1000원 (우선 사용)
         val manualGrant = pointAccumulationUseCase.accumulate(
@@ -146,7 +149,7 @@ class Scenario1BasicAccumulationAndUsageTest @Autowired constructor(
         // 1200원 사용 (수기 지급 1000원 + 만료일 짧은 것 200원)
         val usage = pointUsageUseCase.use(
             memberId = memberId,
-            orderNumber = "ORDER001",
+            orderNumber = orderNumber,
             amount = 1200L
         )
         

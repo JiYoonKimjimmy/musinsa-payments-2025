@@ -9,6 +9,7 @@ import com.musinsa.payments.point.domain.entity.PointUsageStatus
 import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixture
 import com.musinsa.payments.point.domain.exception.InsufficientPointException
 import com.musinsa.payments.point.domain.service.PointUsagePriorityService
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -45,12 +46,13 @@ class PointUsageServiceTest : BehaviorSpec({
     }
 
     Given("사용 가능한 포인트가 충분할 때") {
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val pointKey = TestDataGenerator.randomPointKey()
         val amount = 5000L
 
         val accumulation = PointAccumulationFixture.create(
-            pointKey = "ACCUM01",
+            pointKey = pointKey,
             memberId = memberId,
             amount = 10000L
         )
@@ -84,12 +86,13 @@ class PointUsageServiceTest : BehaviorSpec({
     }
     
     Given("사용 가능한 잔액이 부족한 경우") {
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val pointKey = TestDataGenerator.randomPointKey()
         val amount = 10000L
         
         val accumulation = PointAccumulationFixture.create(
-            pointKey = "ACCUM01",
+            pointKey = pointKey,
             memberId = memberId,
             amount = 5000L
         )
@@ -104,19 +107,21 @@ class PointUsageServiceTest : BehaviorSpec({
     }
     
     Given("여러 적립 건에서 포인트를 사용해야 할 때") {
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val pointKey1 = TestDataGenerator.randomPointKey()
+        val pointKey2 = TestDataGenerator.randomPointKey()
         val amount = 15000L
         
         val accumulation1 = PointAccumulationFixture.create(
-            pointKey = "ACCUM01",
+            pointKey = pointKey1,
             memberId = memberId,
             amount = 10000L,
             expirationDate = LocalDate.now().plusDays(365)
         )
 
         val accumulation2 = PointAccumulationFixture.create(
-            pointKey = "ACCUM02",
+            pointKey = pointKey2,
             memberId = memberId,
             amount = 10000L,
             expirationDate = LocalDate.now().plusDays(200)
@@ -158,12 +163,13 @@ class PointUsageServiceTest : BehaviorSpec({
     }
     
     Given("적립 건별 집계 방식으로 1원 단위 정확도를 추적해야 할 때") {
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val pointKey = TestDataGenerator.randomPointKey()
         val amount = 3L
 
         val accumulation = PointAccumulationFixture.create(
-            pointKey = "ACCUM01",
+            pointKey = pointKey,
             memberId = memberId,
             amount = 10000L
         )
@@ -187,8 +193,8 @@ class PointUsageServiceTest : BehaviorSpec({
     }
     
     Given("0원 이하의 금액 사용 요청이 있을 때") {
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         val amount = 0L
         
         Then("IllegalArgumentException이 발생해야 한다") {
@@ -199,8 +205,8 @@ class PointUsageServiceTest : BehaviorSpec({
     }
     
     Given("음수 금액 사용 요청이 있을 때") {
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         val amount = -1000L
         
         Then("IllegalArgumentException이 발생해야 한다") {

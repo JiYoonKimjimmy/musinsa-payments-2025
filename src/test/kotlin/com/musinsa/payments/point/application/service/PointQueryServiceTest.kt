@@ -8,6 +8,7 @@ import com.musinsa.payments.point.domain.entity.fixtures.PointAccumulationFixtur
 import com.musinsa.payments.point.domain.entity.fixtures.PointUsageFixture
 import com.musinsa.payments.point.domain.valueobject.Money
 import com.musinsa.payments.point.domain.valueobject.OrderNumber
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.data.domain.PageRequest
@@ -27,20 +28,16 @@ class PointQueryServiceTest : BehaviorSpec({
         pointUsagePersistencePort,
         memberPointBalancePersistencePort
     )
-
-    beforeContainer {
-        pointAccumulationPersistencePort.clear()
-        pointUsagePersistencePort.clear()
-        memberPointBalancePersistencePort.clear()
-    }
     
     Given("사용 가능한 포인트 적립 내역이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey1 = TestDataGenerator.randomPointKey()
+        val pointKey2 = TestDataGenerator.randomPointKey()
 
         When("포인트 잔액을 조회하면") {
             // 데이터 준비: 일부 사용된 적립 건
             val accumulation1 = PointAccumulationFixture.createPartiallyUsed(
-                pointKey = "ACCUM01",
+                pointKey = pointKey1,
                 memberId = memberId,
                 amount = 10000L,
                 availableAmount = 8000L
@@ -49,7 +46,7 @@ class PointQueryServiceTest : BehaviorSpec({
 
             // 데이터 준비: 전액 사용 가능한 적립 건
             val accumulation2 = PointAccumulationFixture.createExpiringSoon(
-                pointKey = "ACCUM02",
+                pointKey = pointKey2,
                 memberId = memberId,
                 amount = 5000L,
                 daysUntilExpiration = 200
@@ -69,12 +66,14 @@ class PointQueryServiceTest : BehaviorSpec({
     }
     
     Given("만료된 포인트가 포함된 적립 내역이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val validPointKey = TestDataGenerator.randomPointKey()
+        val expiredPointKey = TestDataGenerator.randomPointKey()
 
         When("포인트 잔액을 조회하면") {
             // 데이터 준비: 유효한 적립 건
             val validAccumulation = PointAccumulationFixture.create(
-                pointKey = "ACCUM01",
+                pointKey = validPointKey,
                 memberId = memberId,
                 amount = 10000L
             )
@@ -82,7 +81,7 @@ class PointQueryServiceTest : BehaviorSpec({
 
             // 데이터 준비: 만료된 적립 건
             val expiredAccumulation = PointAccumulationFixture.createExpired(
-                pointKey = "ACCUM02",
+                pointKey = expiredPointKey,
                 memberId = memberId,
                 amount = 5000L,
                 availableAmount = 3000L,
@@ -101,7 +100,7 @@ class PointQueryServiceTest : BehaviorSpec({
     }
     
     Given("적립 내역이 없을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
 
         When("포인트 잔액을 조회하면") {
             // 데이터 준비: 없음 (beforeContainer에서 clear됨)
@@ -118,25 +117,29 @@ class PointQueryServiceTest : BehaviorSpec({
     }
     
     Given("포인트 사용 내역이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey1 = TestDataGenerator.randomPointKey()
+        val pointKey2 = TestDataGenerator.randomPointKey()
+        val orderNumber1 = TestDataGenerator.randomOrderNumber()
+        val orderNumber2 = TestDataGenerator.randomOrderNumber()
         val pageable = PageRequest.of(0, 10)
 
         When("사용 내역을 조회하면") {
             // 데이터 준비: 사용 내역 2건 (명시적으로 다른 createdAt 설정)
             val baseTime = LocalDateTime.now()
             val usage1 = PointUsage(
-                pointKey = "USAGE01",
+                pointKey = pointKey1,
                 memberId = memberId,
-                orderNumber = OrderNumber.of("ORDER123"),
+                orderNumber = OrderNumber.of(orderNumber1),
                 totalAmount = Money.of(5000L),
                 createdAt = baseTime.minusSeconds(1)
             )
             pointUsagePersistencePort.save(usage1)
 
             val usage2 = PointUsage(
-                pointKey = "USAGE02",
+                pointKey = pointKey2,
                 memberId = memberId,
-                orderNumber = OrderNumber.of("ORDER456"),
+                orderNumber = OrderNumber.of(orderNumber2),
                 totalAmount = Money.of(3000L),
                 createdAt = baseTime
             )
@@ -148,21 +151,22 @@ class PointQueryServiceTest : BehaviorSpec({
                 result.content.size shouldBe 2
                 result.totalElements shouldBe 2
                 // createdAt 내림차순이므로 나중에 저장된 것이 먼저 조회됨
-                result.content[0].pointKey shouldBe "USAGE02"
-                result.content[1].pointKey shouldBe "USAGE01"
+                result.content[0].pointKey shouldBe pointKey2
+                result.content[1].pointKey shouldBe pointKey1
             }
         }
     }
     
     Given("특정 주문번호의 사용 내역이 있을 때") {
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val pointKey = TestDataGenerator.randomPointKey()
         val pageable = PageRequest.of(0, 10)
 
         When("주문번호로 필터링하여 조회하면") {
             // 데이터 준비: 특정 주문번호의 사용 내역
             val usage = PointUsageFixture.create(
-                pointKey = "USAGE01",
+                pointKey = pointKey,
                 memberId = memberId,
                 orderNumber = orderNumber,
                 totalAmount = 5000L
@@ -179,16 +183,16 @@ class PointQueryServiceTest : BehaviorSpec({
     }
     
     Given("페이징이 필요한 사용 내역이 있을 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
         val pageable = PageRequest.of(1, 5) // 두 번째 페이지, 페이지당 5개
 
         When("페이징된 사용 내역을 조회하면") {
             // 데이터 준비: 총 15개의 사용 내역
             (1..15).forEach { i ->
                 val usage = PointUsageFixture.create(
-                    pointKey = "USAGE${String.format("%02d", i)}",
+                    pointKey = TestDataGenerator.randomPointKey(),
                     memberId = memberId,
-                    orderNumber = "ORDER$i",
+                    orderNumber = TestDataGenerator.randomOrderNumber(),
                     totalAmount = 1000L * i
                 )
                 pointUsagePersistencePort.save(usage)

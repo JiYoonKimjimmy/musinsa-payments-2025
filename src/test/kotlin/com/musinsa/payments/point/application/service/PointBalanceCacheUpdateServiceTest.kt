@@ -5,6 +5,7 @@ import com.musinsa.payments.point.domain.entity.MemberPointBalance
 import com.musinsa.payments.point.domain.event.BalanceReconciliationRequestEvent
 import com.musinsa.payments.point.domain.event.PointBalanceEvent
 import com.musinsa.payments.point.domain.valueobject.Money
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -21,19 +22,15 @@ class PointBalanceCacheUpdateServiceTest : StringSpec({
     val memberPointBalancePersistencePort = FakeMemberPointBalancePersistencePort()
     val eventCaptor = EventCapturingPublisher()
     val service = PointBalanceCacheUpdateService(memberPointBalancePersistencePort, eventCaptor)
-    
-    beforeEach {
-        memberPointBalancePersistencePort.clear()
-        eventCaptor.clear()
-    }
-    
+
     "잔액이 없는 회원에 대해 적립 처리 시 새로운 잔액이 생성되어야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
         val event = PointBalanceEvent.Accumulated(
             memberId = memberId,
             amount = Money.of(1000L),
-            pointKey = "TEST001"
+            pointKey = pointKey
         )
         
         // when
@@ -47,7 +44,8 @@ class PointBalanceCacheUpdateServiceTest : StringSpec({
     
     "기존 잔액이 있는 회원에 대해 적립 처리 시 잔액이 증가해야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
         val initialBalance = MemberPointBalance(memberId)
         initialBalance.addBalance(Money.of(5000L))
         memberPointBalancePersistencePort.save(initialBalance)
@@ -55,7 +53,7 @@ class PointBalanceCacheUpdateServiceTest : StringSpec({
         val event = PointBalanceEvent.Accumulated(
             memberId = memberId,
             amount = Money.of(1000L),
-            pointKey = "TEST002"
+            pointKey = pointKey
         )
         
         // when
@@ -68,7 +66,9 @@ class PointBalanceCacheUpdateServiceTest : StringSpec({
     
     "사용 처리 시 잔액이 감소해야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         val initialBalance = MemberPointBalance(memberId)
         initialBalance.addBalance(Money.of(5000L))
         memberPointBalancePersistencePort.save(initialBalance)
@@ -76,8 +76,8 @@ class PointBalanceCacheUpdateServiceTest : StringSpec({
         val event = PointBalanceEvent.Used(
             memberId = memberId,
             amount = Money.of(2000L),
-            pointKey = "USE001",
-            orderNumber = "ORDER001"
+            pointKey = pointKey,
+            orderNumber = orderNumber
         )
         
         // when
@@ -91,11 +91,12 @@ class PointBalanceCacheUpdateServiceTest : StringSpec({
     
     "복구 메서드 호출 시 보정 요청 이벤트가 발행되어야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
         val event = PointBalanceEvent.Accumulated(
             memberId = memberId,
             amount = Money.of(1000L),
-            pointKey = "TEST003"
+            pointKey = pointKey
         )
         val exception = RuntimeException("DB 연결 실패")
         

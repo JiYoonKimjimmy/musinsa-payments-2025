@@ -4,6 +4,7 @@ import com.musinsa.payments.point.application.port.output.persistence.PointAccum
 import com.musinsa.payments.point.application.port.output.persistence.PointUsageDetailPersistencePort
 import com.musinsa.payments.point.application.port.output.persistence.PointUsagePersistencePort
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.extensions.spring.SpringExtension
 import io.kotest.matchers.shouldBe
@@ -18,8 +19,8 @@ import java.util.concurrent.TimeUnit
  * PointUsageService 동시성 테스트
  * 비관적 락이 정상적으로 동작하는지 검증
  */
-@SpringBootTest
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
+@SpringBootTest
 class PointUsageServiceConcurrencyTest(
     private val pointAccumulationService: PointAccumulationService,
     private val pointUsageService: PointUsageService,
@@ -31,8 +32,11 @@ class PointUsageServiceConcurrencyTest(
 
     extension(SpringExtension)
 
-    // 테스트에서 사용하는 memberId 목록
-    val testMemberIds = listOf(1L, 2L, 3L)
+    // 테스트에서 사용하는 memberId 목록 (각 Given 블록에서 랜덤 생성된 memberId들을 추적)
+    val usedMemberIds = mutableSetOf<Long>()
+    
+    // 테스트 데이터 초기화를 위한 memberId 목록 (clearTestData에서 사용)
+    val testMemberIds: List<Long> = usedMemberIds.toList()
     
     // 테스트 데이터 초기화 함수
     fun clearTestData() {
@@ -67,10 +71,11 @@ class PointUsageServiceConcurrencyTest(
     beforeContainer {
         // 각 Given 블록 전에 데이터 초기화
         clearTestData()
+        usedMemberIds.clear()
     }
 
     Given("10개의 스레드가 동시에 포인트를 사용할 때") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId().also { usedMemberIds.add(it) }
         val initialAmount = 10000L
 
         When("10000원 적립 후 10개 스레드가 1000원씩 사용하면") {
@@ -86,7 +91,8 @@ class PointUsageServiceConcurrencyTest(
             repeat(threadCount) { index ->
                 executorService.submit {
                     try {
-                        pointUsageService.use(memberId, "ORDER-$index", usageAmount)
+                        val orderNumber = TestDataGenerator.randomOrderNumber()
+                        pointUsageService.use(memberId, orderNumber, usageAmount)
                         results[index] = Result.success(Unit)
                     } catch (e: Exception) {
                         results[index] = Result.failure(e)
@@ -119,7 +125,7 @@ class PointUsageServiceConcurrencyTest(
     }
 
     Given("11개의 스레드가 동시에 포인트를 사용할 때 (잔액 부족 상황)") {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId().also { usedMemberIds.add(it) }
         val initialAmount = 10000L
 
         When("10000원 적립 후 11개 스레드가 1000원씩 사용하면") {
@@ -135,7 +141,8 @@ class PointUsageServiceConcurrencyTest(
             repeat(threadCount) { index ->
                 executorService.submit {
                     try {
-                        pointUsageService.use(memberId, "ORDER-$index", usageAmount)
+                        val orderNumber = TestDataGenerator.randomOrderNumber()
+                        pointUsageService.use(memberId, orderNumber, usageAmount)
                         results[index] = Result.success(Unit)
                     } catch (e: Exception) {
                         results[index] = Result.failure(e)
@@ -165,7 +172,7 @@ class PointUsageServiceConcurrencyTest(
     }
 
     Given("회원에게 여러 건의 포인트가 적립되어 있을 때") {
-        val memberId = 2L
+        val memberId = TestDataGenerator.randomMemberId().also { usedMemberIds.add(it) }
 
         When("여러 스레드가 동시에 포인트를 사용하면") {
             // 초기 적립 (5건 * 2000원 = 10000원)
@@ -182,7 +189,8 @@ class PointUsageServiceConcurrencyTest(
             repeat(threadCount) { index ->
                 executorService.submit {
                     try {
-                        pointUsageService.use(memberId, "ORDER-$index", usageAmount)
+                        val orderNumber = TestDataGenerator.randomOrderNumber()
+                        pointUsageService.use(memberId, orderNumber, usageAmount)
                         results[index] = Result.success(Unit)
                     } catch (e: Exception) {
                         results[index] = Result.failure(e)
@@ -209,7 +217,7 @@ class PointUsageServiceConcurrencyTest(
     }
 
     Given("동시에 포인트 사용과 사용 취소가 발생할 때") {
-        val memberId = 3L
+        val memberId = TestDataGenerator.randomMemberId().also { usedMemberIds.add(it) }
         val initialAmount = 10000L
 
         When("한 스레드는 사용, 다른 스레드는 취소를 시도하면") {
@@ -217,7 +225,8 @@ class PointUsageServiceConcurrencyTest(
             pointAccumulationService.accumulate(memberId, initialAmount, null, false)
 
             // 먼저 5000원 사용
-            val firstUsage = pointUsageService.use(memberId, "ORDER-FIRST", 5000L)
+            val firstOrderNumber = TestDataGenerator.randomOrderNumber()
+            val firstUsage = pointUsageService.use(memberId, firstOrderNumber, 5000L)
             val firstPointKey = firstUsage.pointKey
 
             val threadCount = 2
@@ -228,7 +237,8 @@ class PointUsageServiceConcurrencyTest(
             // 스레드 1: 5000원 추가 사용
             executorService.submit {
                 try {
-                    pointUsageService.use(memberId, "ORDER-SECOND", 5000L)
+                    val secondOrderNumber = TestDataGenerator.randomOrderNumber()
+                    pointUsageService.use(memberId, secondOrderNumber, 5000L)
                     results["use"] = Result.success(Unit)
                 } catch (e: Exception) {
                     results["use"] = Result.failure(e)

@@ -7,6 +7,7 @@ import com.musinsa.payments.point.domain.entity.MemberPointBalance
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.event.BalanceReconciliationRequestEvent
 import com.musinsa.payments.point.domain.valueobject.Money
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.time.LocalDate
@@ -23,25 +24,22 @@ class BalanceReconciliationEventHandlerTest : StringSpec({
         pointAccumulationPersistencePort
     )
     val handler = BalanceReconciliationEventHandler(reconciliationService)
-    
-    beforeEach {
-        memberPointBalancePersistencePort.clear()
-        pointAccumulationPersistencePort.clear()
-    }
-    
+
     "보정 요청 이벤트 수신 시 캐시와 실제 잔액이 불일치하면 보정되어야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey1 = TestDataGenerator.randomPointKey()
+        val pointKey2 = TestDataGenerator.randomPointKey()
         
         // 실제 적립 건 생성 (1500원)
         val accumulation1 = PointAccumulation(
-            pointKey = "TEST001",
+            pointKey = pointKey1,
             memberId = memberId,
             amount = Money.of(1000L),
             expirationDate = LocalDate.now().plusDays(365)
         )
         val accumulation2 = PointAccumulation(
-            pointKey = "TEST002",
+            pointKey = pointKey2,
             memberId = memberId,
             amount = Money.of(500L),
             expirationDate = LocalDate.now().plusDays(365)
@@ -71,11 +69,12 @@ class BalanceReconciliationEventHandlerTest : StringSpec({
     
     "보정 요청 이벤트 수신 시 캐시가 없으면 새로 생성되어야 한다" {
         // given
-        val memberId = 2L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
         
         // 실제 적립 건 생성 (2000원)
         val accumulation = PointAccumulation(
-            pointKey = "TEST003",
+            pointKey = pointKey,
             memberId = memberId,
             amount = Money.of(2000L),
             expirationDate = LocalDate.now().plusDays(365)
@@ -100,11 +99,12 @@ class BalanceReconciliationEventHandlerTest : StringSpec({
     
     "보정 요청 이벤트 수신 시 캐시와 실제 잔액이 일치하면 변경되지 않아야 한다" {
         // given
-        val memberId = 3L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
         
         // 실제 적립 건 생성 (1000원)
         val accumulation = PointAccumulation(
-            pointKey = "TEST004",
+            pointKey = pointKey,
             memberId = memberId,
             amount = Money.of(1000L),
             expirationDate = LocalDate.now().plusDays(365)

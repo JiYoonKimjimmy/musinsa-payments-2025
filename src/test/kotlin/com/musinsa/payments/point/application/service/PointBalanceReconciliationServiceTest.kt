@@ -5,6 +5,7 @@ import com.musinsa.payments.point.application.port.output.persistence.fixtures.F
 import com.musinsa.payments.point.domain.entity.MemberPointBalance
 import com.musinsa.payments.point.domain.entity.PointAccumulation
 import com.musinsa.payments.point.domain.valueobject.Money
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.time.LocalDate
@@ -21,18 +22,14 @@ class PointBalanceReconciliationServiceTest : StringSpec({
         pointAccumulationPersistencePort
     )
     
-    beforeEach {
-        memberPointBalancePersistencePort.clear()
-        pointAccumulationPersistencePort.clear()
-    }
-    
     "캐시된 잔액과 실제 잔액이 일치할 때 MATCHED 상태가 반환되어야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
         
         // 적립 건 생성
         val accumulation = PointAccumulation(
-            pointKey = "TEST001",
+            pointKey = pointKey,
             memberId = memberId,
             amount = Money.of(1000L),
             expirationDate = LocalDate.now().plusDays(365)
@@ -54,17 +51,19 @@ class PointBalanceReconciliationServiceTest : StringSpec({
     
     "캐시된 잔액이 실제 잔액보다 적을 때 CORRECTED 상태가 반환되고 잔액이 보정되어야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey1 = TestDataGenerator.randomPointKey()
+        val pointKey2 = TestDataGenerator.randomPointKey()
         
         // 적립 건 생성
         val accumulation1 = PointAccumulation(
-            pointKey = "TEST001",
+            pointKey = pointKey1,
             memberId = memberId,
             amount = Money.of(1000L),
             expirationDate = LocalDate.now().plusDays(365)
         )
         val accumulation2 = PointAccumulation(
-            pointKey = "TEST002",
+            pointKey = pointKey2,
             memberId = memberId,
             amount = Money.of(500L),
             expirationDate = LocalDate.now().plusDays(365)
@@ -94,11 +93,12 @@ class PointBalanceReconciliationServiceTest : StringSpec({
     
     "캐시된 잔액이 없고 실제 잔액이 있을 때 CREATED 상태가 반환되고 새 잔액이 생성되어야 한다" {
         // given
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val pointKey = TestDataGenerator.randomPointKey()
         
         // 적립 건 생성
         val accumulation = PointAccumulation(
-            pointKey = "TEST001",
+            pointKey = pointKey,
             memberId = memberId,
             amount = Money.of(2000L),
             expirationDate = LocalDate.now().plusDays(365)
@@ -120,7 +120,7 @@ class PointBalanceReconciliationServiceTest : StringSpec({
     
     "캐시된 잔액도 없고 실제 잔액도 없을 때 SKIPPED 상태가 반환되어야 한다" {
         // given
-        val memberId = 999L
+        val memberId = TestDataGenerator.randomMemberId()
         
         // when
         val result = service.reconcileMemberBalance(memberId)

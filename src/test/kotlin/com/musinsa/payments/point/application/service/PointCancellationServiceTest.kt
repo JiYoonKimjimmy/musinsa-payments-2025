@@ -13,6 +13,7 @@ import com.musinsa.payments.point.domain.entity.fixtures.PointUsageDetailFixture
 import com.musinsa.payments.point.domain.entity.fixtures.PointUsageFixture
 import com.musinsa.payments.point.domain.exception.CannotCancelUsageException
 import com.musinsa.payments.point.domain.valueobject.Money
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -40,27 +41,18 @@ class PointCancellationServiceTest : BehaviorSpec({
         pointConfigService,
         pointBalanceEventPublisher
     )
-
-    beforeContainer {
-        pointUsagePersistencePort.clear()
-        pointUsageDetailPersistencePort.clear()
-        pointAccumulationPersistencePort.clear()
-        pointKeyGenerator.resetCounter()
-        pointConfigPort.resetToDefaults()
-        pointConfigHistoryPort.clear()
-        pointBalanceEventPublisher.clear()
-    }
     
     Given("취소 가능한 포인트 사용 건이 있을 때") {
-        val pointKey = "USAGE01"
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val pointKey = TestDataGenerator.randomPointKey()
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val accumulationPointKey = TestDataGenerator.randomPointKey()
         val totalAmount = Money.of(5000L)
 
         When("전체 취소하면") {
             // 데이터 준비 - 적립 건 생성
             val accumulation = PointAccumulationFixture.create(
-                pointKey = "ACCUM01",
+                pointKey = accumulationPointKey,
                 memberId = memberId,
                 amount = 10000L
             )
@@ -109,16 +101,17 @@ class PointCancellationServiceTest : BehaviorSpec({
     }
     
     Given("부분 취소 가능한 포인트 사용 건이 있을 때") {
-        val pointKey = "USAGE02"
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val pointKey = TestDataGenerator.randomPointKey()
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val accumulationPointKey = TestDataGenerator.randomPointKey()
         val totalAmount = Money.of(10000L)
         val cancelAmount = 3000L
 
         When("부분 취소하면") {
             // 데이터 준비 - 적립 건 생성
             val accumulation = PointAccumulationFixture.create(
-                pointKey = "ACCUM01",
+                pointKey = accumulationPointKey,
                 memberId = memberId,
                 amount = 20000L
             )
@@ -163,7 +156,7 @@ class PointCancellationServiceTest : BehaviorSpec({
     }
     
     Given("존재하지 않는 사용 건 키가 있을 때") {
-        val pointKey = "NOTFOUND"
+        val pointKey = TestDataGenerator.randomPointKey()
 
         When("취소하면") {
             Then("IllegalArgumentException이 발생해야 한다") {
@@ -175,9 +168,9 @@ class PointCancellationServiceTest : BehaviorSpec({
     }
     
     Given("취소 불가능한 금액이 있을 때") {
-        val pointKey = "USAGE03"
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val pointKey = TestDataGenerator.randomPointKey()
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         val totalAmount = Money.of(5000L)
         val cancelAmount = 10000L // 총액보다 큰 금액
 
@@ -200,15 +193,16 @@ class PointCancellationServiceTest : BehaviorSpec({
     }
     
     Given("만료된 포인트가 포함된 사용 건이 있을 때") {
-        val pointKey = "USAGE04"
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val pointKey = TestDataGenerator.randomPointKey()
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val expiredPointKey = TestDataGenerator.randomPointKey()
         val totalAmount = Money.of(5000L)
 
         When("취소하면") {
             // 데이터 준비 - 만료된 적립 건 생성
             val expiredAccumulation = PointAccumulationFixture.createExpired(
-                pointKey = "EXPIRED01",
+                pointKey = expiredPointKey,
                 memberId = memberId,
                 amount = 10000L,
                 availableAmount = 10000L - totalAmount.toLong(),
@@ -258,15 +252,16 @@ class PointCancellationServiceTest : BehaviorSpec({
     }
     
     Given("만료되지 않은 포인트가 포함된 사용 건이 있을 때") {
-        val pointKey = "USAGE05"
-        val memberId = 1L
-        val orderNumber = "ORDER123"
+        val pointKey = TestDataGenerator.randomPointKey()
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
+        val accumulationPointKey = TestDataGenerator.randomPointKey()
         val totalAmount = Money.of(5000L)
 
         When("취소하면") {
             // 데이터 준비 - 적립 건 생성
             val accumulation = PointAccumulationFixture.create(
-                pointKey = "ACCUM01",
+                pointKey = accumulationPointKey,
                 memberId = memberId,
                 amount = 10000L
             )

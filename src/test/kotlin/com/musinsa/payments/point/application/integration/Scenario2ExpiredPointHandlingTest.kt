@@ -7,6 +7,7 @@ import com.musinsa.payments.point.application.port.input.PointUsageUseCase
 import com.musinsa.payments.point.domain.entity.PointAccumulationStatus
 import com.musinsa.payments.point.infrastructure.persistence.jpa.mapper.PointEntityMapper
 import com.musinsa.payments.point.infrastructure.persistence.jpa.repository.PointAccumulationJpaRepository
+import com.musinsa.payments.point.test.TestDataGenerator
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.extensions.spring.SpringExtension
 import io.kotest.matchers.collections.shouldHaveSize
@@ -29,9 +30,9 @@ import java.time.LocalDate
  * 4. 사용 취소 (1100원)
  * 5. 검증: A는 만료되었으므로 신규 적립 처리, B는 복원
  */
-@Transactional
-@Import(PointEntityMapper::class)
 @ActiveProfiles("test")
+@Import(PointEntityMapper::class)
+@Transactional
 @SpringBootTest
 class Scenario2ExpiredPointHandlingTest @Autowired constructor(
     private val pointAccumulationUseCase: PointAccumulationUseCase,
@@ -45,7 +46,8 @@ class Scenario2ExpiredPointHandlingTest @Autowired constructor(
     extensions(SpringExtension)
     
     "시나리오 2: 만료 포인트 사용 취소가 정상적으로 동작해야 한다" {
-        val memberId = 1L
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         
         // 1. 포인트 적립 (A: 1000원, B: 500원)
         val accumulationA = pointAccumulationUseCase.accumulate(
@@ -72,7 +74,7 @@ class Scenario2ExpiredPointHandlingTest @Autowired constructor(
         // 2. 포인트 사용 (1200원: A에서 1000원, B에서 200원 사용)
         val usage = pointUsageUseCase.use(
             memberId = memberId,
-            orderNumber = "ORDER001",
+            orderNumber = orderNumber,
             amount = 1200L
         )
         val pointKeyC = usage.pointKey
@@ -147,7 +149,8 @@ class Scenario2ExpiredPointHandlingTest @Autowired constructor(
     }
     
     "시나리오 2 확장: 만료되지 않은 포인트는 복원되어야 한다" {
-        val memberId = 2L
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         
         // 포인트 적립
         val accumulation = pointAccumulationUseCase.accumulate(
@@ -161,7 +164,7 @@ class Scenario2ExpiredPointHandlingTest @Autowired constructor(
         // 포인트 사용
         val usage = pointUsageUseCase.use(
             memberId = memberId,
-            orderNumber = "ORDER002",
+            orderNumber = orderNumber,
             amount = 500L
         )
         
@@ -193,7 +196,8 @@ class Scenario2ExpiredPointHandlingTest @Autowired constructor(
     }
     
     "시나리오 2 확장: 부분 취소 시 만료 포인트는 신규 적립으로 처리되어야 한다" {
-        val memberId = 3L
+        val memberId = TestDataGenerator.randomMemberId()
+        val orderNumber = TestDataGenerator.randomOrderNumber()
         
         // 포인트 적립
         val accumulation = pointAccumulationUseCase.accumulate(
@@ -207,7 +211,7 @@ class Scenario2ExpiredPointHandlingTest @Autowired constructor(
         // 포인트 사용
         val usage = pointUsageUseCase.use(
             memberId = memberId,
-            orderNumber = "ORDER003",
+            orderNumber = orderNumber,
             amount = 1000L
         )
         
