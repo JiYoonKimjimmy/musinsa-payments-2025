@@ -183,7 +183,7 @@ class ScenarioExpiredPointHandlingTest @Autowired constructor(
             it.pointKey != pointKey3 &&
             it.pointKey != pointKey4 &&
             it.pointKey != pointKey5 &&
-            it.pointKey != newAccumulationFrom1!!.pointKey &&
+            it.pointKey != newAccumulationFrom1.pointKey &&
             it.amount.toLong() == 2000L &&
             it.availableAmount.toLong() == 2000L
         }
