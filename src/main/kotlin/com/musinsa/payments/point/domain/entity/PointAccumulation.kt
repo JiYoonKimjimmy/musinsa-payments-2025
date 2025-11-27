@@ -177,7 +177,7 @@ class PointAccumulation {
      * 포인트 복원 처리
      * 사용 취소 시 사용 가능 잔액을 복원합니다.
      */
-    fun restore(restoreAmount: Money) {
+    fun restore(restoreAmount: Money): PointAccumulation {
         if (restoreAmount.isLessThanOrEqual(Money.ZERO)) {
             throw InvalidAmountException("복원 금액은 0보다 커야 합니다.")
         }
@@ -187,5 +187,6 @@ class PointAccumulation {
         }
         availableAmount = newAvailable
         updatedAt = LocalDateTime.now()
+        return this
     }
 }

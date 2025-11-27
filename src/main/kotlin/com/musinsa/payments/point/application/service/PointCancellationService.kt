@@ -91,8 +91,13 @@ class PointCancellationService(
         }
         
         // 적립 건 복원 처리 (만료 포인트 확인 및 신규 적립 처리)
+        // N+1 문제 방지를 위해 배치 조회 처리
+        val accumulationIds = restoredAccumulations.keys.toList()
+        val accumulationsMap = pointAccumulationPersistencePort.findByIdsWithLock(accumulationIds)
+        
         for ((accumulationId, restoreAmount) in restoredAccumulations) {
-            restoreAccumulation(accumulationId, restoreAmount)
+            val accumulation = requireNotNull(accumulationsMap[accumulationId]) { "포인트 적립 건을 찾을 수 없습니다: $accumulationId" }
+            restoreAccumulation(accumulation, restoreAmount)
         }
         
         // 사용 건 취소 처리
@@ -117,26 +122,24 @@ class PointCancellationService(
     /**
      * 적립 건 복원 처리
      * 만료된 포인트인 경우 신규 적립으로 처리하고, 그렇지 않으면 기존 적립 건 복원
+     * 
+     * @param accumulation 조회된 적립 건 (이미 락이 적용된 상태)
+     * @param restoreAmount 복원할 금액
      */
-    private fun restoreAccumulation(accumulationId: Long, restoreAmount: Money) {
-        // 적립 건 조회 (비관적 락 적용)
-        val accumulation = pointAccumulationPersistencePort.findByIdWithLock(accumulationId)
-            .orElseThrow { IllegalArgumentException("포인트 적립 건을 찾을 수 없습니다: $accumulationId") }
-        
+    private fun restoreAccumulation(accumulation: PointAccumulation, restoreAmount: Money) {
         // 만료 여부 확인
-        if (accumulation.isExpired()) {
+        val resotred = if (accumulation.isExpired()) {
             // 만료된 포인트는 신규 적립으로 처리
-            val newAccumulation = createNewAccumulationForExpiredPoint(
+            createNewAccumulationForExpiredPoint(
                 memberId = accumulation.memberId,
                 amount = restoreAmount,
                 originalExpirationDate = accumulation.expirationDate
             )
-            pointAccumulationPersistencePort.save(newAccumulation)
         } else {
             // 만료되지 않은 포인트는 기존 적립 건 복원
             accumulation.restore(restoreAmount)
-            pointAccumulationPersistencePort.save(accumulation)
         }
+        pointAccumulationPersistencePort.save(resotred)
     }
     
     /**

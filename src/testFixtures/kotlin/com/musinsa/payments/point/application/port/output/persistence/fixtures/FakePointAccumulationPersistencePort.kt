@@ -85,6 +85,11 @@ class FakePointAccumulationPersistencePort : PointAccumulationPersistencePort {
         return findById(id)
     }
 
+    override fun findByIdsWithLock(ids: List<Long>): Map<Long, PointAccumulation> {
+        // Fake 구현: 실제 락 없이 배치 조회
+        return ids.mapNotNull { id -> storageById[id]?.let { id to it } }.toMap()
+    }
+
     override fun findAvailableAccumulationsByMemberIdWithLock(memberId: Long): List<PointAccumulation> {
         // Fake 구현: 실제 락 없이 기존 메서드 재사용
         return findAvailableAccumulationsByMemberId(memberId)

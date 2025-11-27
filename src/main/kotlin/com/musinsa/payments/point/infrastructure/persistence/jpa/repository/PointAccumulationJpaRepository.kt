@@ -62,6 +62,15 @@ interface PointAccumulationJpaRepository : JpaRepository<PointAccumulationEntity
     fun findByIdWithLock(@Param("id") id: Long): Optional<PointAccumulationEntity>
 
     /**
+     * ID 목록으로 조회 (비관적 쓰기 락)
+     * N+1 문제를 방지하기 위한 배치 조회 메서드입니다.
+     * SELECT ... FOR UPDATE
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT pa FROM PointAccumulationEntity pa WHERE pa.id IN :ids")
+    fun findByIdsWithLock(@Param("ids") ids: List<Long>): List<PointAccumulationEntity>
+
+    /**
      * 회원 ID로 사용 가능한 적립 건 조회 (비관적 쓰기 락)
      * 상태가 ACCUMULATED이고 사용 가능 잔액이 0보다 큰 적립 건만 조회
      * 수기 지급 우선, 만료일 짧은 순으로 정렬
