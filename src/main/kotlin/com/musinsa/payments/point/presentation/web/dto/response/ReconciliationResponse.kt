@@ -10,19 +10,19 @@ import java.math.BigDecimal
  */
 @Schema(description = "정합성 보정 결과")
 data class ReconciliationResultResponse(
-    @Schema(description = "회원 ID", example = "12345")
+    @field:Schema(description = "회원 ID", example = "12345")
     val memberId: Long,
     
-    @Schema(description = "보정 상태", example = "CORRECTED")
+    @field:Schema(description = "보정 상태", example = "CORRECTED")
     val status: String,
     
-    @Schema(description = "실제 잔액 (적립 건 합계)", example = "50000")
+    @field:Schema(description = "실제 잔액 (적립 건 합계)", example = "50000")
     val actualBalance: BigDecimal,
     
-    @Schema(description = "캐시된 잔액 (잔액 테이블)", example = "45000")
+    @field:Schema(description = "캐시된 잔액 (잔액 테이블)", example = "45000")
     val cachedBalance: BigDecimal,
     
-    @Schema(description = "차이 금액", example = "5000")
+    @field:Schema(description = "차이 금액", example = "5000")
     val difference: BigDecimal
 ) {
     companion object {
@@ -43,22 +43,22 @@ data class ReconciliationResultResponse(
  */
 @Schema(description = "전체 정합성 보정 결과 요약")
 data class ReconciliationSummaryResponse(
-    @Schema(description = "총 검사 건수", example = "100")
+    @field:Schema(description = "총 검사 건수", example = "100")
     val totalChecked: Int,
     
-    @Schema(description = "일치 건수", example = "95")
+    @field:Schema(description = "일치 건수", example = "95")
     val matchedCount: Int,
     
-    @Schema(description = "보정된 건수", example = "3")
+    @field:Schema(description = "보정된 건수", example = "3")
     val correctedCount: Int,
     
-    @Schema(description = "신규 생성 건수", example = "1")
+    @field:Schema(description = "신규 생성 건수", example = "1")
     val createdCount: Int,
     
-    @Schema(description = "건너뛴 건수", example = "1")
+    @field:Schema(description = "건너뛴 건수", example = "1")
     val skippedCount: Int,
     
-    @Schema(description = "상세 결과 목록")
+    @field:Schema(description = "상세 결과 목록")
     val details: List<ReconciliationResultResponse>
 ) {
     companion object {

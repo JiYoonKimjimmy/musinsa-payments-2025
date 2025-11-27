@@ -43,6 +43,7 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+  override-with-generic-response: false
 
 # 서버 설정
 server:
