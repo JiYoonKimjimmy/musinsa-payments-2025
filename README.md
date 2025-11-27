@@ -76,7 +76,7 @@ java -jar build/libs/musinsa-payments-0.0.1-SNAPSHOT.jar
 | Swagger UI | http://localhost:8080/swagger-ui/index.html |
 | H2 콘솔      | http://localhost:8080/h2-console            |
 
-> H2 접속: JDBC URL `jdbc:h2:mem:testdb`, Username `sa`, Password 없음
+> H2 접속: JDBC URL `jdbc:h2:mem:musinsa-db`, Username `sa`, Password 없음
 
 ### 초기 설정값
 
