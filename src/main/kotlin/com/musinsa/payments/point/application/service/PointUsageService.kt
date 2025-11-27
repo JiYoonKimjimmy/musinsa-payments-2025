@@ -129,7 +129,7 @@ class PointUsageService(
             val updatedAccumulations: List<PointAccumulation>
         )
 
-        val usageId = usage.id ?: throw IllegalStateException("사용 건 ID가 없습니다.")
+        val usageId = checkNotNull(usage.id) { "사용 건 ID가 없습니다." }
 
         val initState = ProcessingState(
             remainingAmount = totalUsageAmount,
@@ -138,7 +138,7 @@ class PointUsageService(
         )
         
         val finalState = accumulations.fold(initial = initState) { state, accumulation ->
-            val accumulationId = accumulation.id ?: throw IllegalStateException("적립 건 ID가 없습니다.")
+            val accumulationId = checkNotNull(accumulation.id) { "적립 건 ID가 없습니다." }
             val useAmount = calculateUseAmount(state.remainingAmount, accumulation.availableAmount)
 
             // 적립 건에서 포인트 사용 처리

@@ -35,16 +35,18 @@ class PointConfig {
      * 설정 값을 Long 타입으로 변환
      */
     fun getLongValue(): Long {
-        return configValue.toLongOrNull() 
-            ?: throw IllegalArgumentException("configValue가 숫자가 아닙니다: $configValue")
+        return requireNotNull(configValue.toLongOrNull()) { 
+            "configValue가 숫자가 아닙니다: $configValue" 
+        }
     }
     
     /**
      * 설정 값을 Int 타입으로 변환
      */
     fun getIntValue(): Int {
-        return configValue.toIntOrNull() 
-            ?: throw IllegalArgumentException("configValue가 숫자가 아닙니다: $configValue")
+        return requireNotNull(configValue.toIntOrNull()) { 
+            "configValue가 숫자가 아닙니다: $configValue" 
+        }
     }
     
     /**
